@@ -178,7 +178,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   <header>
     <div class="logo">
-      <div class="logo-mark">✓</div>
+      <div class="logo-mark">C</div>
       <span class="logo-text">CADENCE</span>
     </div>
     <div class="header-right">
@@ -217,7 +217,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         <!-- Meeting-only fields -->
         <div class="meeting-fields" id="meetingFields" style="display:none">
           <div class="field">
-            <label>Meeting/Event Date</label>
+            <label>Meeting Date</label>
             <input type="date" class="date-input-field" id="meetingDate">
           </div>
           <div class="field">
@@ -227,7 +227,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         </div>
 
         <div class="toggle-row">
-          <span class="toggle-label-text">Include in report?</span>
+          <span class="toggle-label-text">Include in report</span>
           <label class="toggle">
             <input type="checkbox" id="chkReport" checked>
             <div class="toggle-track"></div>
@@ -841,8 +841,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       text += `\n`;
     }
 
-    text += `TASKS / ACTIVITIES\n`;
-    ['New','Started','Continued','Completed','Blocked'].forEach(action => {
+    text += `ACTIVITIES\n`;
+    ['Started','Continued','Completed','Blocked'].forEach(action => {
       const group = report.filter(e => e.action === action && e.type !== 'Meeting');
       if (group.length) {
         text += `  ${action.toUpperCase()}\n`;
@@ -850,14 +850,29 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       }
     });
 
-    const meetings = report.filter(e => e.type === 'Meeting');
-    if (meetings.length) {
-      text += `\nMEETINGS\n`;
-      meetings.forEach(e => {
-        const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
-        const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
-        text += `  • ${e.notes || 'Meeting'}${dateStr}${atStr}\n`;
-      });
+    const allMeetings = report.filter(e => e.type === 'Meeting');
+    const thisWeekStart = new Date(document.getElementById('weekBadge').textContent.split('–')[0].trim() + ' ' + new Date().getFullYear());
+
+    function meetingLabel(e) {
+      const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
+      const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
+      return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
+    }
+
+    // Split by meeting date vs next week
+    const now        = new Date();
+    const nextMon    = new Date(now); nextMon.setDate(now.getDate() + (7 - now.getDay() + 1) % 7 || 7); nextMon.setHours(0,0,0,0);
+    const nextFri    = new Date(nextMon); nextFri.setDate(nextMon.getDate() + 4); nextFri.setHours(23,59,59,999);
+    const thisMeetings = allMeetings.filter(e => !e.meetingDate || new Date(e.meetingDate+'T12:00:00') < nextMon);
+    const nextMeetings = allMeetings.filter(e => e.meetingDate && new Date(e.meetingDate+'T12:00:00') >= nextMon);
+
+    if (thisMeetings.length) {
+      text += `\nMEETINGS — THIS WEEK\n`;
+      thisMeetings.forEach(e => { text += `  • ${meetingLabel(e)}\n`; });
+    }
+    if (nextMeetings.length) {
+      text += `\nMEETINGS — NEXT WEEK\n`;
+      nextMeetings.forEach(e => { text += `  • ${meetingLabel(e)}\n`; });
     }
 
     text += `\n${'─'.repeat(40)}\n`;
