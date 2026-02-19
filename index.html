@@ -11,7 +11,7 @@
 
 <script>
 const manifestData = {
-  name: "CADENCE", short_name: "WorkLog",
+  name: "Work Logger", short_name: "WorkLog",
   description: "Quick work entry logger with weekly summaries",
   start_url: "./", display: "standalone",
   background_color: "#0e0f11", theme_color: "#0e0f11",
@@ -208,7 +208,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           <div class="field">
             <label>Action</label>
             <select id="selAction">
-              <option>Started</option><option>Continued</option>
+              <option>New</option><option>Started</option><option>Continued</option>
               <option>Completed</option><option>Blocked</option>
             </select>
           </div>
@@ -841,8 +841,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       text += `\n`;
     }
 
-    text += `ACTIVITIES\n`;
-    ['Started','Continued','Completed','Blocked'].forEach(action => {
+    text += `TASKS / ACTIVITIES\n`;
+    ['New','Started','Continued','Completed','Blocked'].forEach(action => {
       const group = report.filter(e => e.action === action && e.type !== 'Meeting');
       if (group.length) {
         text += `  ${action.toUpperCase()}\n`;
@@ -856,9 +856,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     function meetingLabel(e) {
       const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
       const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
-      const dateStr = e.meetingDate ? new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) + ' ' : '';
-      const atStr   = e.attendees ? ` — ${e.attendees}` : '';
-      return `${dateStr}${e.notes || 'Meeting'}${atStr}`;
+      return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
     }
 
     // Split by meeting date vs next week
