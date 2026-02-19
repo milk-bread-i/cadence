@@ -208,7 +208,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           <div class="field">
             <label>Action</label>
             <select id="selAction">
-              <option>New</option><option>Started</option><option>Continued</option>
+              <option>Started</option><option>Continued</option>
               <option>Completed</option><option>Blocked</option>
             </select>
           </div>
@@ -841,8 +841,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       text += `\n`;
     }
 
-    text += `TASKS / ACTIVITIES\n`;
-    ['New','Started','Continued','Completed','Blocked'].forEach(action => {
+    text += `ACTIVITIES\n`;
+    ['Started','Continued','Completed','Blocked'].forEach(action => {
       const group = report.filter(e => e.action === action && e.type !== 'Meeting');
       if (group.length) {
         text += `  ${action.toUpperCase()}\n`;
