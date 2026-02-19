@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cadence — Report Compiler</title>
+<title>CADENCE — Report Compiler</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -224,8 +224,8 @@
 // ─────────────────────────────────────────────
 // CONFIG — paste your Supabase credentials here
 // ─────────────────────────────────────────────
-const SUPABASE_URL = "https://heuplhwoiuybjqcvpktx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
 const TASK_STATUSES = ["New", "Started", "Continued", "Completed", "Blocked"];
 const STATUS_COLORS = {
@@ -297,14 +297,30 @@ function buildSections(member) {
   const memberEntries = entries.filter(e => e.user_name === member.name && e.inReport && isInWeek(e.timestamp));
   const tasks = {};
   TASK_STATUSES.forEach(s => { tasks[s] = []; });
-  memberEntries.forEach(e => { if (tasks[e.action] !== undefined) tasks[e.action].push(e.notes || e.type); });
-  const meetings     = memberEntries.filter(e => e.type === "Meeting").map(e => e.notes || "Meeting").filter(Boolean);
-  const completed    = memberEntries.filter(e => e.action === "Completed" && e.notes);
-  const priorityText = completed.length
-    ? completed.map(e => e.notes).join("; ")
-    : memberEntries.length
-      ? memberEntries.map(e => `${e.action}: ${e.notes || e.type}`).slice(0,3).join("; ")
-      : "";
+  memberEntries.filter(e => e.type !== 'Meeting').forEach(e => {
+    if (tasks[e.action] !== undefined) tasks[e.action].push(e.notes || e.type);
+  });
+
+  // Meetings with date and attendees
+  const meetings = memberEntries
+    .filter(e => e.type === "Meeting")
+    .map(e => {
+      const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
+      const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
+      return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
+    });
+
+  // Priority — explicit priority field first, fall back to completed
+  const withPriority = memberEntries.filter(e => e.priority);
+  const completed    = memberEntries.filter(e => e.action === "Completed" && e.notes && !e.priority);
+  const priorityText = withPriority.length
+    ? withPriority.map(e => e.priority).join("; ")
+    : completed.length
+      ? completed.map(e => e.notes).join("; ")
+      : memberEntries.length
+        ? memberEntries.map(e => `${e.action}: ${e.notes || e.type}`).slice(0,3).join("; ")
+        : "";
+
   return { tasks, meetings, priorityText, count: memberEntries.length };
 }
 
@@ -596,12 +612,12 @@ function renderPreview() {
         if (sec.meetings.length) {
           html += `
             <div class="doc-section">
-              <div class="doc-sec-title">📅 This Week's Meetings</div>
+              <div class="doc-sec-title">📅 This Week's Meetings & Events</div>
               ${sec.meetings.map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}
             </div>`;
         }
 
-        html += `<div class="preview-entry-count">${sec.count} entr${sec.count===1?'y':'ies'} this week</div>`;
+
       }
       html += `</div>`;
     });
@@ -634,11 +650,11 @@ function generateReport() {
         sec.tasks[status].forEach(t => { content += `    • ${t}\n`; });
       }
     });
-    content += `\nTHIS WEEK'S MEETINGS\n`;
+    content += `\nTHIS WEEK'S MEETINGS & EVENTS\n`;
     if (sec.meetings.length) {
       sec.meetings.forEach(m => { content += `  • ${m}\n`; });
     } else { content += `  (None logged)\n`; }
-    content += `\nNEXT WEEK'S MEETINGS\n  (To be confirmed)\n\n${'═'.repeat(60)}\n\n`;
+    content += `\nNEXT WEEK'S MEETINGS & EVENTS\n  (To be confirmed)\n\n${'═'.repeat(60)}\n\n`;
   });
 
   const blob = new Blob([content], { type: 'text/plain' });
