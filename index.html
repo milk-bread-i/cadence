@@ -328,10 +328,10 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 </div>
 
 <script>
-  const STORAGE_KEY  = 'worklogger_entries';
-  const CREDS_KEY    = 'worklogger_supabase';
-  const USER_KEY     = 'worklogger_user';
-  const MEMBERS_KEY  = 'worklogger_members';
+  const STORAGE_KEY  = 'Cadence_entries';
+  const CREDS_KEY    = 'Cadence_supabase';
+  const USER_KEY     = 'Cadence_user';
+  const MEMBERS_KEY  = 'Cadence_members';
 
   // Fallback members if Supabase not yet connected
   const DEFAULT_MEMBERS = [];
@@ -828,7 +828,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   // ── SERVICE WORKER ──
   if ('serviceWorker' in navigator) {
     const swCode = `
-      const CACHE='worklogger-v2';
+      const CACHE='Cadence-v2';
       self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll([self.location.href]))));
       self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));
     `;
