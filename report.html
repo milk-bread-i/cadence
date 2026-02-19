@@ -224,11 +224,12 @@
 // ─────────────────────────────────────────────
 // CONFIG — paste your Supabase credentials here
 // ─────────────────────────────────────────────
-const SUPABASE_URL = "https://heuplhwoiuybjqcvpktx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o";
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-const TASK_STATUSES = ["Started", "Continued", "Completed", "Blocked"];
+const TASK_STATUSES = ["New", "Started", "Continued", "Completed", "Blocked"];
 const STATUS_COLORS = {
+  New:       { bg: "#dce8f5", text: "#275891", border: "#b8d0e8" },
   Started:   { bg: "#e8f5ee", text: "#2d7a4f", border: "#b8d8c4" },
   Continued: { bg: "#fef9ec", text: "#a06020", border: "#f0d080" },
   Completed: { bg: "#f5e8f0", text: "#9a3070", border: "#e8c8dc" },
@@ -310,9 +311,7 @@ function buildSections(member) {
   function formatMeeting(e) {
     const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
     const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
-    const dateStr = e.meetingDate ? new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) + ' ' : '';
-    const atStr   = e.attendees ? ` — ${e.attendees}` : '';
-    return `${dateStr}${e.notes || 'Meeting'}${atStr}`;
+    return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
   }
 
   // All meeting entries for this member (any logged week) to catch next-week meetings
@@ -548,7 +547,7 @@ function renderMemberDetail() {
 
     html += `
       <div class="section">
-        <div class="section-label">✅ Activities</div>
+        <div class="section-label">✅ Tasks / Activities</div>
         <div class="task-grid">${taskCols || '<div class="empty-field">No tasks logged</div>'}</div>
       </div>`;
 
@@ -624,7 +623,7 @@ function renderPreview() {
         if (taskCols) {
           html += `
             <div class="doc-section">
-              <div class="doc-sec-title">✅ Activities</div>
+              <div class="doc-sec-title">✅ Tasks / Activities</div>
               <div class="preview-tasks">${taskCols}</div>
             </div>`;
         }
@@ -668,7 +667,7 @@ function generateReport() {
     const sec = buildSections(m);
     content += `${m.name.toUpperCase()} — ${m.role || ''}\n${'─'.repeat(50)}\n\n`;
     content += `THIS WEEK'S PRIORITIES\n  ${sec.priorityText || '(No entries logged)'}\n\n`;
-    content += `ACTIVITIES\n`;
+    content += `TASKS / ACTIVITIES\n`;
     TASK_STATUSES.forEach(status => {
       if (sec.tasks[status].length) {
         content += `  ${status.toUpperCase()}\n`;
