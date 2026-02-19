@@ -270,7 +270,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       <!-- WHO ARE YOU -->
       <div class="setup-card">
         <div class="setup-title">Who Are You?</div>
-        <p class="setup-desc">Pick your name. This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
+        <p class="setup-desc">This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
         <span class="user-picker-label">Select your name</span>
         <div class="user-grid" id="userGrid"></div>
         <div id="userSavedMsg"></div>
@@ -336,8 +336,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   let entries      = [];
   let teamMembers  = [];
   let activeFilter = 'all';
-  let supabaseUrl  = '';
-  let supabaseKey  = '';
+  let supabaseUrl  = 'https://heuplhwoiuybjqcvpktx.supabase.co';
+  let supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o';
   let currentUser  = null;
 
   // ── INIT ──
