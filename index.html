@@ -10,17 +10,12 @@
 <meta name="theme-color" content="#0e0f11">
 <title>Work Logger</title>
 
-<!-- PWA Manifest inline -->
-
 <script>
 const manifestData = {
-  name: "Work Logger",
-  short_name: "WorkLog",
+  name: "Work Logger", short_name: "WorkLog",
   description: "Quick work entry logger with weekly summaries",
-  start_url: "./",
-  display: "standalone",
-  background_color: "#0e0f11",
-  theme_color: "#0e0f11",
+  start_url: "./", display: "standalone",
+  background_color: "#0e0f11", theme_color: "#0e0f11",
   orientation: "portrait-primary",
   icons: [
     { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%234f8ef7'/%3E%3Ctext x='96' y='128' text-anchor='middle' font-family='monospace' font-weight='700' font-size='80' fill='white'%3EWL%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
@@ -28,547 +23,155 @@ const manifestData = {
   ]
 };
 const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
-const manifestURL = URL.createObjectURL(blob);
-document.write(`<link rel="manifest" href="${manifestURL}">`);
+document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
   :root {
-    --bg:       #0e0f11;
-    --surface:  #16181c;
-    --surface2: #1e2026;
-    --border:   #2a2d35;
-    --border2:  #363a45;
-    --accent:   #4f8ef7;
-    --accent2:  #2563eb;
-    --green:    #22c55e;
-    --amber:    #f59e0b;
-    --red:      #ef4444;
-    --purple:   #a78bfa;
-    --text:     #e2e8f0;
-    --text2:    #94a3b8;
-    --text3:    #4b5563;
-    --mono:     'IBM Plex Mono', monospace;
-    --sans:     'IBM Plex Sans', sans-serif;
-    --safe-top:    env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --bg:#0e0f11; --surface:#16181c; --surface2:#1e2026;
+    --border:#2a2d35; --border2:#363a45;
+    --accent:#4f8ef7; --accent2:#2563eb;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --purple:#a78bfa;
+    --text:#e2e8f0; --text2:#94a3b8; --text3:#4b5563;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    overscroll-behavior: none;
-  }
-
-  /* ── App shell ── */
-  .app {
-    height: 100vh;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* ── Header ── */
-  header {
-    padding: calc(14px + var(--safe-top)) 20px 14px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    z-index: 50;
-  }
-
-  .logo { display: flex; align-items: center; gap: 10px; }
-
-  .logo-mark {
-    width: 30px; height: 30px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono);
-    font-weight: 700; font-size: 11px;
-    color: white; letter-spacing: -1px;
-  }
-
-  .logo-text {
-    font-family: var(--mono);
-    font-size: 12px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase;
-  }
-
-  .header-right { display: flex; align-items: center; gap: 10px; }
-
-  .sync-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text3);
-    transition: background 0.3s;
-  }
-  .sync-dot.synced  { background: var(--green); }
-  .sync-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
-  .sync-dot.error   { background: var(--red); }
-
-  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
-
-  .week-badge {
-    font-family: var(--mono);
-    font-size: 10px; color: var(--text2);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 4px 8px; border-radius: 4px;
-    letter-spacing: 0.5px;
-  }
-
-  /* ── Bottom nav ── */
-  .bottom-nav {
-    display: flex;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding-bottom: var(--safe-bottom);
-    flex-shrink: 0;
-  }
-
-  .nav-btn {
-    flex: 1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 4px;
-    padding: 10px 0;
-    background: none; border: none;
-    color: var(--text3);
-    cursor: pointer;
-    transition: color 0.15s;
-    font-family: var(--mono);
-    font-size: 9px; font-weight: 600;
-    letter-spacing: 1px; text-transform: uppercase;
-  }
-
-  .nav-btn .nav-icon { font-size: 18px; line-height: 1; }
-  .nav-btn.active { color: var(--accent); }
-
-  /* ── Screens ── */
-  .screen { display: none; flex: 1; overflow: hidden; flex-direction: column; }
-  .screen.active { display: flex; }
-
-  /* ── Scrollable content ── */
-  .scroll-body {
-    flex: 1; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 16px;
-  }
-
-  .scroll-body::-webkit-scrollbar { display: none; }
-
-  /* ══════════════════════════════════
-     LOG SCREEN
-  ══════════════════════════════════ */
-  .form-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .field { display: flex; flex-direction: column; gap: 7px; }
-
-  label {
-    font-family: var(--mono);
-    font-size: 9px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase;
-    color: var(--text3);
-  }
-
-  select, textarea {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 16px; /* prevents iOS zoom */
-    padding: 13px 16px;
-    outline: none;
-    width: 100%;
-    appearance: none;
-    -webkit-appearance: none;
-    transition: border-color 0.15s;
-  }
-
-  select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-    cursor: pointer;
-  }
-
-  select:focus, textarea:focus { border-color: var(--accent); }
-  select option { background: #1e2026; }
-
-  textarea {
-    resize: none; height: 90px;
-    line-height: 1.5;
-  }
-
-  textarea::placeholder { color: var(--text3); }
-
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  /* Toggle */
-  .toggle-row {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 13px 16px;
-  }
-
-  .toggle-label-text {
-    font-size: 14px; color: var(--text2);
-    font-weight: 500;
-  }
-
-  .toggle { position: relative; width: 46px; height: 26px; cursor: pointer; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-
-  .toggle-track {
-    position: absolute; inset: 0;
-    background: var(--border2);
-    border-radius: 13px;
-    transition: background 0.2s;
-  }
-
-  .toggle input:checked + .toggle-track { background: var(--accent); }
-
-  .toggle-thumb {
-    position: absolute;
-    width: 20px; height: 20px;
-    background: white; border-radius: 50%;
-    top: 3px; left: 3px;
-    transition: transform 0.2s;
-    pointer-events: none;
-  }
-
-  .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
-
-  /* Log button */
-  .btn-log {
-    width: 100%; padding: 16px;
-    background: var(--accent);
-    color: white; border: none;
-    border-radius: 12px;
-    font-family: var(--mono);
-    font-size: 13px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-    margin-top: 4px;
-  }
-
-  .btn-log:active { transform: scale(0.97); }
-  .btn-log.success { background: var(--green); }
-
-  /* ══════════════════════════════════
-     FEED SCREEN
-  ══════════════════════════════════ */
-  .feed-filters {
-    display: flex; gap: 8px;
-    padding: 12px 16px;
-    overflow-x: auto;
-    flex-shrink: 0;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .feed-filters::-webkit-scrollbar { display: none; }
-
-  .filter-chip {
-    font-family: var(--mono);
-    font-size: 10px; font-weight: 600;
-    letter-spacing: 1px; text-transform: uppercase;
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
-  }
-
-  .filter-chip.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
-
-  .entry-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    animation: slideIn 0.2s ease;
-  }
-
-  @keyframes slideIn {
-    from { opacity:0; transform:translateY(-6px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-
-  .entry-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-
-  .entry-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-
-  .tag {
-    font-family: var(--mono);
-    font-size: 9px; font-weight: 600;
-    letter-spacing: 1px; text-transform: uppercase;
-    padding: 3px 8px; border-radius: 4px;
-  }
-
-  .tag-type   { background:#1e2a3a; color:var(--accent);  border:1px solid #243040; }
-  .tag-action { background:#2a1e3a; color:var(--purple); border:1px solid #352040; }
-  .tag-time   { background:#2a2010; color:var(--amber);  border:1px solid #3a2e12; }
-  .tag-report { background:#142a1e; color:var(--green);  border:1px solid #1a3524; }
-  .tag-noreport { background:#1e1e1e; color:var(--text3); border:1px solid var(--border); }
-
-  .btn-delete {
-    background: none; border: none;
-    color: var(--text3); cursor: pointer;
-    font-size: 16px; padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.15s;
-    flex-shrink: 0;
-    margin-left: 8px;
-  }
-
-  .entry-notes {
-    font-size: 14px; color: var(--text);
-    line-height: 1.5; margin-bottom: 8px;
-  }
-
-  .entry-notes.empty { color: var(--text3); font-style: italic; font-size: 13px; }
-
-  .entry-time {
-    font-family: var(--mono);
-    font-size: 10px; color: var(--text3);
-  }
-
-  /* Stats strip */
-  .stats-strip {
-    display: flex; gap: 0;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .stat-item {
-    flex: 1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 10px 4px;
-    border-right: 1px solid var(--border);
-  }
-
-  .stat-item:last-child { border-right: none; }
-
-  .stat-val {
-    font-family: var(--mono);
-    font-size: 14px; font-weight: 600;
-    color: var(--text);
-  }
-
-  .stat-lbl {
-    font-family: var(--mono);
-    font-size: 8px; letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin-top: 2px;
-  }
-
-  /* Empty state */
-  .empty-state {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 12px; padding: 60px 20px;
-    color: var(--text3); text-align: center;
-  }
-
-  .empty-icon { font-size: 36px; opacity: 0.3; }
-
-  .empty-text {
-    font-family: var(--mono);
-    font-size: 11px; letter-spacing: 1px;
-    line-height: 1.8;
-  }
-
-  /* ══════════════════════════════════
-     SUMMARY SCREEN
-  ══════════════════════════════════ */
-  .summary-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 12px;
-  }
-
-  .summary-card-title {
-    font-family: var(--mono);
-    font-size: 10px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 12px;
-  }
-
-  .summary-text {
-    font-family: var(--mono);
-    font-size: 12px; line-height: 1.9;
-    color: var(--text); white-space: pre-wrap;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px;
-  }
-
-  .btn-full {
-    width: 100%; padding: 15px;
-    border-radius: 12px;
-    font-family: var(--mono);
-    font-size: 12px; font-weight: 600;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    cursor: pointer; border: none;
-    transition: all 0.15s;
-    margin-bottom: 10px;
-  }
-
-  .btn-full:active { transform: scale(0.98); }
-
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:active { background: var(--accent2); }
-  .btn-primary.copied { background: var(--green); }
-
-  .btn-secondary {
-    background: transparent;
-    border: 1px solid var(--border2) !important;
-    color: var(--text2);
-  }
-
-  .btn-danger {
-    background: transparent;
-    border: 1px solid var(--border) !important;
-    color: var(--red);
-  }
-
-  /* ══════════════════════════════════
-     SETUP SCREEN
-  ══════════════════════════════════ */
-  .setup-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 12px;
-  }
-
-  .setup-title {
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase;
-    color: var(--text2);
-    margin-bottom: 4px;
-  }
-
-  .setup-desc {
-    font-size: 13px; color: var(--text2);
-    line-height: 1.6; margin-bottom: 14px;
-  }
-
-  .setup-step {
-    display: flex; gap: 12px;
-    align-items: flex-start;
-    margin-bottom: 14px;
-  }
-
-  .step-num {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 1px;
-  }
-
-  .step-text { font-size: 13px; color: var(--text2); line-height: 1.5; }
-  .step-text a { color: var(--accent); text-decoration: none; }
-  .step-text code {
-    font-family: var(--mono);
-    font-size: 11px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 1px 5px; border-radius: 3px;
-    color: var(--amber);
-  }
-
-  .cred-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 12px 14px;
-    outline: none;
-    margin-bottom: 10px;
-    transition: border-color 0.15s;
-  }
-
-  .cred-input:focus { border-color: var(--accent); }
-  .cred-input::placeholder { color: var(--text3); }
-
-  .status-msg {
-    font-family: var(--mono);
-    font-size: 11px; letter-spacing: 1px;
-    text-align: center; padding: 8px;
-    border-radius: 6px; margin-top: 8px;
-  }
-
-  .status-msg.ok  { background: #142a1e; color: var(--green); }
-  .status-msg.err { background: #2a1414; color: var(--red); }
-
-  /* Desktop enhancements */
-  @media (min-width: 768px) {
-    .app { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
-    body { background: #08090a; }
-  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overscroll-behavior:none}
+
+  .app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+  header{padding:calc(14px + var(--safe-top)) 20px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-mark{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:11px;color:white;letter-spacing:-1px}
+  .logo-text{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
+  .header-right{display:flex;align-items:center;gap:10px}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background 0.3s}
+  .sync-dot.synced{background:var(--green)}
+  .sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+  .sync-dot.error{background:var(--red)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  .week-badge{font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:4px 8px;border-radius:4px;letter-spacing:0.5px}
+
+  /* User badge in header */
+  .user-badge{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);background:#1a2236;border:1px solid #243040;padding:4px 9px;border-radius:4px;letter-spacing:0.5px;cursor:pointer}
+  .user-badge.unset{color:var(--amber);background:#1e1a0e;border-color:#3a2e12}
+
+  .bottom-nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-bottom);flex-shrink:0}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 0;background:none;border:none;color:var(--text3);cursor:pointer;transition:color 0.15s;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+  .nav-btn .nav-icon{font-size:18px;line-height:1}
+  .nav-btn.active{color:var(--accent)}
+
+  .screen{display:none;flex:1;overflow:hidden;flex-direction:column}
+  .screen.active{display:flex}
+  .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+  .scroll-body::-webkit-scrollbar{display:none}
+
+  /* ── LOG SCREEN ── */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .field{display:flex;flex-direction:column;gap:7px}
+  label{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+  select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:16px;padding:13px 16px;outline:none;width:100%;appearance:none;-webkit-appearance:none;transition:border-color 0.15s}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+  select:focus,textarea:focus{border-color:var(--accent)}
+  select option{background:#1e2026}
+  textarea{resize:none;height:90px;line-height:1.5}
+  textarea::placeholder{color:var(--text3)}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 16px}
+  .toggle-label-text{font-size:14px;color:var(--text2);font-weight:500}
+  .toggle{position:relative;width:46px;height:26px;cursor:pointer}
+  .toggle input{opacity:0;width:0;height:0}
+  .toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:13px;transition:background 0.2s}
+  .toggle input:checked+.toggle-track{background:var(--accent)}
+  .toggle-thumb{position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:3px;transition:transform 0.2s;pointer-events:none}
+  .toggle input:checked~.toggle-thumb{transform:translateX(20px)}
+
+  /* No-user warning */
+  .no-user-warn{background:#1e1a0e;border:1px solid #3a2e12;border-radius:10px;padding:13px 16px;font-size:13px;color:var(--amber);text-align:center;cursor:pointer}
+
+  .btn-log{width:100%;padding:16px;background:var(--accent);color:white;border:none;border-radius:12px;font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background 0.15s,transform 0.1s;margin-top:4px}
+  .btn-log:active{transform:scale(0.97)}
+  .btn-log.success{background:var(--green)}
+  .btn-log:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed}
+
+  /* ── FEED SCREEN ── */
+  .feed-filters{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border)}
+  .feed-filters::-webkit-scrollbar{display:none}
+  .filter-chip{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all 0.15s}
+  .filter-chip.active{background:var(--accent);border-color:var(--accent);color:white}
+
+  .entry-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;animation:slideIn 0.2s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .entry-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+  .entry-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+  .tag-type{background:#1e2a3a;color:var(--accent);border:1px solid #243040}
+  .tag-action{background:#2a1e3a;color:var(--purple);border:1px solid #352040}
+  .tag-time{background:#2a2010;color:var(--amber);border:1px solid #3a2e12}
+  .tag-report{background:#142a1e;color:var(--green);border:1px solid #1a3524}
+  .tag-noreport{background:#1e1e1e;color:var(--text3);border:1px solid var(--border)}
+  .btn-delete{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:color 0.15s;flex-shrink:0;margin-left:8px}
+  .entry-notes{font-size:14px;color:var(--text);line-height:1.5;margin-bottom:8px}
+  .entry-notes.empty{color:var(--text3);font-style:italic;font-size:13px}
+  .entry-time{font-family:var(--mono);font-size:10px;color:var(--text3)}
+
+  .stats-strip{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+  .stat-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;border-right:1px solid var(--border)}
+  .stat-item:last-child{border-right:none}
+  .stat-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text)}
+  .stat-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-top:2px}
+
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px 20px;color:var(--text3);text-align:center}
+  .empty-icon{font-size:36px;opacity:0.3}
+  .empty-text{font-family:var(--mono);font-size:11px;letter-spacing:1px;line-height:1.8}
+
+  /* ── SUMMARY SCREEN ── */
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px}
+  .summary-card-title{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  .summary-text{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--text);white-space:pre-wrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .btn-full{width:100%;padding:15px;border-radius:12px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.15s;margin-bottom:10px}
+  .btn-full:active{transform:scale(0.98)}
+  .btn-primary{background:var(--accent);color:white}
+  .btn-primary:active{background:var(--accent2)}
+  .btn-primary.copied{background:var(--green)}
+  .btn-secondary{background:transparent;border:1px solid var(--border2)!important;color:var(--text2)}
+  .btn-danger{background:transparent;border:1px solid var(--border)!important;color:var(--red)}
+
+  /* ── SETUP SCREEN ── */
+  .setup-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px}
+  .setup-title{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:4px}
+  .setup-desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px}
+  .setup-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+  .step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:white;font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .step-text{font-size:13px;color:var(--text2);line-height:1.5}
+  .step-text a{color:var(--accent);text-decoration:none}
+  .step-text code{font-family:var(--mono);font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px;color:var(--amber)}
+  .cred-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:12px;padding:12px 14px;outline:none;margin-bottom:10px;transition:border-color 0.15s}
+  .cred-input:focus{border-color:var(--accent)}
+  .cred-input::placeholder{color:var(--text3)}
+  .status-msg{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-align:center;padding:8px;border-radius:6px;margin-top:8px}
+  .status-msg.ok{background:#142a1e;color:var(--green)}
+  .status-msg.err{background:#2a1414;color:var(--red)}
+
+  /* User picker section */
+  .user-picker-label{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:7px}
+  .user-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+  .user-btn{padding:14px 10px;background:var(--surface2);border:2px solid var(--border);border-radius:10px;color:var(--text2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;text-align:center}
+  .user-btn:active{transform:scale(0.97)}
+  .user-btn.selected{background:#1a2236;border-color:var(--accent);color:var(--accent)}
+  .user-btn .user-initials{font-family:var(--mono);font-size:18px;font-weight:700;display:block;margin-bottom:4px}
+
+  @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}body{background:#08090a}}
 </style>
 
 </head>
 <body>
 <div class="app">
-
-  <!-- Header -->
 
   <header>
     <div class="logo">
@@ -576,7 +179,8 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       <span class="logo-text">Work Logger</span>
     </div>
     <div class="header-right">
-      <div class="sync-dot" id="syncDot" title="Sync status"></div>
+      <div class="sync-dot" id="syncDot"></div>
+      <span class="user-badge unset" id="userBadge" onclick="switchScreen('setup')">Set Name</span>
       <span class="week-badge" id="weekBadge"></span>
     </div>
   </header>
@@ -588,43 +192,25 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       <div class="form-card">
 
 ```
+    <div id="noUserWarn" class="no-user-warn" onclick="switchScreen('setup')" style="display:none">
+      ⚠️ Set your name in Setup before logging
+    </div>
+
     <div class="two-col">
       <div class="field">
         <label>Type</label>
         <select id="selType">
-          <option>Task</option>
-          <option>Meeting</option>
-          <option>Discussion</option>
-          <option>Review</option>
-          <option>Research</option>
-          <option>Admin</option>
+          <option>Task</option><option>Meeting</option><option>Discussion</option>
+          <option>Review</option><option>Research</option><option>Admin</option>
         </select>
       </div>
       <div class="field">
         <label>Action</label>
         <select id="selAction">
-          <option>New</option>
-          <option>Started</option>
-          <option>Continued</option>
-          <option>Completed</option>
-          <option>Blocked</option>
+          <option>New</option><option>Started</option><option>Continued</option>
+          <option>Completed</option><option>Blocked</option>
         </select>
       </div>
-    </div>
-
-    <div class="field">
-      <label>Time Estimate</label>
-      <select id="selTime">
-        <option>5 min</option>
-        <option>10 min</option>
-        <option>15 min</option>
-        <option>20 min</option>
-        <option>30 min</option>
-        <option selected>45 min</option>
-        <option>60 min</option>
-        <option>90 min</option>
-        <option>120 min</option>
-      </select>
     </div>
 
     <div class="toggle-row">
@@ -641,10 +227,7 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       <textarea id="txtNotes" placeholder="What did you do, discuss, or decide?"></textarea>
     </div>
 
-    <button class="btn-log" id="btnLog" onclick="logEntry()">
-      Log Entry
-    </button>
-
+    <button class="btn-log" id="btnLog" onclick="logEntry()">Log Entry</button>
   </div>
 </div>
 ```
@@ -668,8 +251,8 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
   <div class="screen" id="screen-summary">
     <div class="scroll-body">
       <div class="summary-card">
-        <div class="summary-card-title">Weekly Summary — Report Entries</div>
-        <div class="summary-text" id="summaryText">Tap refresh to generate.</div>
+        <div class="summary-card-title">My Weekly Summary — Report Entries</div>
+        <div class="summary-text" id="summaryText">Tap Summary tab to generate.</div>
       </div>
       <button class="btn-full btn-primary" id="btnCopy" onclick="copySummary()">Copy to Clipboard</button>
       <button class="btn-full btn-secondary" onclick="exportCSV()">↓ Download CSV Backup</button>
@@ -683,40 +266,41 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     <div class="scroll-body">
 
 ```
+  <!-- WHO ARE YOU -->
   <div class="setup-card">
-    <div class="setup-title">Supabase Sync Setup</div>
-    <p class="setup-desc">Connect a free Supabase database so your entries sync between your Windows browser and iPhone. Takes about 5 minutes.</p>
+    <div class="setup-title">Who Are You?</div>
+    <p class="setup-desc">Pick your name. This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
+    <span class="user-picker-label">Select your name</span>
+    <div class="user-grid" id="userGrid"></div>
+    <div id="userSavedMsg"></div>
+  </div>
 
+  <!-- SUPABASE -->
+  <div class="setup-card">
+    <div class="setup-title">Supabase Sync</div>
+    <p class="setup-desc">Connect the shared team database. Get these credentials from your PM or whoever set up the Supabase project.</p>
     <div class="setup-step">
       <div class="step-num">1</div>
-      <div class="step-text">Go to <a href="https://supabase.com" target="_blank">supabase.com</a> and create a free account (use your personal email, not work).</div>
+      <div class="step-text">Ask your PM for the shared Supabase <strong>Project URL</strong> and <strong>anon public key</strong>.</div>
     </div>
     <div class="setup-step">
       <div class="step-num">2</div>
-      <div class="step-text">Create a new project. When ready, go to <strong>SQL Editor</strong> and run this query to create your table:<br><br>
-      <code>create table entries (id bigint primary key, created_at timestamptz default now(), data jsonb);</code></div>
+      <div class="step-text">Paste them below and tap Save.</div>
     </div>
-    <div class="setup-step">
-      <div class="step-num">3</div>
-      <div class="step-text">Go to <strong>Project Settings → API</strong>. Copy your <strong>Project URL</strong> and <strong>anon public key</strong> and paste them below.</div>
-    </div>
-  </div>
-
-  <div class="setup-card">
-    <div class="setup-title">Your Credentials</div>
     <input class="cred-input" id="inpUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocorrect="off" autocapitalize="off">
     <input class="cred-input" id="inpKey" type="text" placeholder="eyJhbGciOi... (anon public key)" autocomplete="off" autocorrect="off" autocapitalize="off">
     <button class="btn-full btn-primary" onclick="saveCredentials()">Save & Test Connection</button>
     <div id="setupStatus"></div>
   </div>
 
+  <!-- INSTALL -->
   <div class="setup-card">
     <div class="setup-title">Install as iPhone App</div>
-    <div class="step-text" style="color:var(--text2); line-height:1.7;">
+    <div class="step-text" style="color:var(--text2);line-height:1.7">
       1. Open this page in <strong>Safari</strong> on your iPhone<br>
       2. Tap the <strong>Share</strong> button (box with arrow)<br>
-      3. Scroll down and tap <strong>"Add to Home Screen"</strong><br>
-      4. Tap <strong>Add</strong> — done. It'll appear as a full-screen app.
+      3. Scroll down → <strong>"Add to Home Screen"</strong><br>
+      4. Tap <strong>Add</strong> — done.
     </div>
   </div>
 
@@ -724,8 +308,6 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
 ```
 
   </div>
-
-  <!-- Bottom Nav -->
 
   <nav class="bottom-nav">
     <button class="nav-btn active" id="nav-log" onclick="switchScreen('log')">
@@ -741,48 +323,104 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       <span class="nav-icon">⚙️</span>Setup
     </button>
   </nav>
-
 </div>
 
 <script>
-  // ══════════════════════════════════
-  // CONFIG & STATE
-  // ══════════════════════════════════
-  const STORAGE_KEY  = 'worklogger_entries';
-  const CREDS_KEY    = 'worklogger_supabase';
-  let entries        = [];
-  let activeFilter   = 'all';
-  let supabaseUrl    = '';
-  let supabaseKey    = '';
-  let syncTimer      = null;
+  // ── TEAM MEMBERS — keep in sync with report compiler ──
+  const TEAM_MEMBERS = [
+    { id: "alex",   name: "Alex Rivera",   role: "Project Manager" },
+    { id: "jordan", name: "Jordan Kim",    role: "Lead Developer"  },
+    { id: "morgan", name: "Morgan Taylor", role: "Designer"        },
+    { id: "casey",  name: "Casey Nguyen",  role: "QA Engineer"     },
+  ];
 
-  // ══════════════════════════════════
-  // INIT
-  // ══════════════════════════════════
+  const STORAGE_KEY = 'worklogger_entries';
+  const CREDS_KEY   = 'worklogger_supabase';
+  const USER_KEY    = 'worklogger_user';
+
+  let entries      = [];
+  let activeFilter = 'all';
+  let supabaseUrl  = '';
+  let supabaseKey  = '';
+  let currentUser  = null; // { id, name, role }
+
+  // ── INIT ──
   function init() {
+    loadUser();
     loadCredentials();
     loadLocal();
     updateWeekBadge();
+    buildUserGrid();
     renderFeed();
     renderStats();
+    updateUserBadge();
+    updateLogButton();
     if (supabaseUrl && supabaseKey) syncFromCloud();
   }
 
-  // ══════════════════════════════════
-  // LOCAL STORAGE
-  // ══════════════════════════════════
+  // ── USER ──
+  function loadUser() {
+    const saved = localStorage.getItem(USER_KEY);
+    if (saved) currentUser = JSON.parse(saved);
+  }
+
+  function selectUser(memberId) {
+    currentUser = TEAM_MEMBERS.find(m => m.id === memberId);
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+    buildUserGrid();
+    updateUserBadge();
+    updateLogButton();
+    const msg = document.getElementById('userSavedMsg');
+    msg.className = 'status-msg ok';
+    msg.textContent = `✓ Logged in as ${currentUser.name}`;
+    setTimeout(() => { msg.textContent = ''; msg.className = ''; }, 2500);
+  }
+
+  function buildUserGrid() {
+    const grid = document.getElementById('userGrid');
+    grid.innerHTML = TEAM_MEMBERS.map(m => {
+      const initials = m.name.split(' ').map(n => n[0]).join('');
+      const sel = currentUser && currentUser.id === m.id ? 'selected' : '';
+      return `
+        <button class="user-btn ${sel}" onclick="selectUser('${m.id}')">
+          <span class="user-initials">${initials}</span>
+          ${m.name}
+        </button>`;
+    }).join('');
+  }
+
+  function updateUserBadge() {
+    const badge = document.getElementById('userBadge');
+    if (currentUser) {
+      badge.textContent = currentUser.name.split(' ')[0];
+      badge.classList.remove('unset');
+    } else {
+      badge.textContent = 'Set Name';
+      badge.classList.add('unset');
+    }
+  }
+
+  function updateLogButton() {
+    const btn  = document.getElementById('btnLog');
+    const warn = document.getElementById('noUserWarn');
+    if (currentUser) {
+      btn.disabled = false;
+      warn.style.display = 'none';
+    } else {
+      btn.disabled = true;
+      warn.style.display = 'block';
+    }
+  }
+
+  // ── LOCAL STORAGE ──
   function loadLocal() {
     const saved = localStorage.getItem(STORAGE_KEY);
     entries = saved ? JSON.parse(saved) : [];
   }
 
-  function saveLocal() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  }
+  function saveLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
 
-  // ══════════════════════════════════
-  // CREDENTIALS
-  // ══════════════════════════════════
+  // ── CREDENTIALS ──
   function loadCredentials() {
     const saved = localStorage.getItem(CREDS_KEY);
     if (saved) {
@@ -798,17 +436,14 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     supabaseUrl = document.getElementById('inpUrl').value.trim().replace(/\/$/, '');
     supabaseKey = document.getElementById('inpKey').value.trim();
     const status = document.getElementById('setupStatus');
-
     if (!supabaseUrl || !supabaseKey) {
       status.className = 'status-msg err';
       status.textContent = 'Please enter both URL and key.';
       return;
     }
-
     status.className = 'status-msg';
     status.textContent = 'Testing connection…';
     setSyncStatus('syncing');
-
     try {
       const res = await fetch(`${supabaseUrl}/rest/v1/entries?limit=1`, {
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
@@ -821,32 +456,30 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       await syncFromCloud();
     } catch(e) {
       status.className = 'status-msg err';
-      status.textContent = `Connection failed: ${e.message}. Check your URL and key.`;
+      status.textContent = `Connection failed: ${e.message}`;
       setSyncStatus('error');
     }
   }
 
-  // ══════════════════════════════════
-  // SUPABASE SYNC
-  // ══════════════════════════════════
+  // ── SUPABASE SYNC ──
   function setSyncStatus(state) {
     const dot = document.getElementById('syncDot');
     dot.className = 'sync-dot ' + state;
-    dot.title = { synced:'Synced', syncing:'Syncing…', error:'Sync error', '':'Not configured' }[state] || '';
   }
 
   async function syncFromCloud() {
-    if (!supabaseUrl || !supabaseKey) return;
+    if (!supabaseUrl || !supabaseKey || !currentUser) return;
     setSyncStatus('syncing');
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/entries?select=id,data&order=id.desc`, {
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-      });
+      // Only fetch THIS user's entries
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/entries?select=id,data&user_name=eq.${encodeURIComponent(currentUser.name)}&order=id.desc`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+      );
       if (!res.ok) throw new Error();
       const rows = await res.json();
       const cloudEntries = rows.map(r => ({ id: r.id, ...r.data }));
 
-      // Merge: union by id, cloud wins on conflict
       const localMap = {};
       entries.forEach(e => localMap[e.id] = e);
       cloudEntries.forEach(e => localMap[e.id] = e);
@@ -856,14 +489,9 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
       renderStats();
       setSyncStatus('synced');
 
-      // Push any local entries not in cloud
       const cloudIds = new Set(cloudEntries.map(e => e.id));
-      const toUpload = entries.filter(e => !cloudIds.has(e.id));
-      for (const e of toUpload) await pushEntry(e);
-
-    } catch(e) {
-      setSyncStatus('error');
-    }
+      for (const e of entries.filter(e => !cloudIds.has(e.id))) await pushEntry(e);
+    } catch(e) { setSyncStatus('error'); }
   }
 
   async function pushEntry(entry) {
@@ -878,9 +506,9 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
           'Content-Type': 'application/json',
           Prefer: 'resolution=ignore-duplicates'
         },
-        body: JSON.stringify({ id, data })
+        body: JSON.stringify({ id, user_name: currentUser.name, data })
       });
-    } catch(e) { /* will retry on next sync */ }
+    } catch(e) {}
   }
 
   async function deleteFromCloud(id) {
@@ -893,16 +521,16 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     } catch(e) {}
   }
 
-  // ══════════════════════════════════
-  // LOG ENTRY
-  // ══════════════════════════════════
+  // ── LOG ENTRY ──
   async function logEntry() {
+    if (!currentUser) return;
     const entry = {
       id:        Date.now(),
       timestamp: new Date().toISOString(),
+      user_name: currentUser.name,
+      user_id:   currentUser.id,
       type:      document.getElementById('selType').value,
       action:    document.getElementById('selAction').value,
-      time:      document.getElementById('selTime').value,
       inReport:  document.getElementById('chkReport').checked,
       notes:     document.getElementById('txtNotes').value.trim(),
     };
@@ -912,17 +540,14 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     renderFeed();
     renderStats();
 
-    // Reset
     document.getElementById('txtNotes').value = '';
     document.getElementById('chkReport').checked = true;
 
-    // Flash
     const btn = document.getElementById('btnLog');
     btn.textContent = '✓  Logged!';
     btn.classList.add('success');
     setTimeout(() => { btn.textContent = 'Log Entry'; btn.classList.remove('success'); }, 1400);
 
-    // Push to cloud
     if (supabaseUrl && supabaseKey) {
       setSyncStatus('syncing');
       await pushEntry(entry);
@@ -930,9 +555,7 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     }
   }
 
-  // ══════════════════════════════════
-  // NAVIGATION
-  // ══════════════════════════════════
+  // ── NAVIGATION ──
   function switchScreen(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -942,12 +565,9 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     if (name === 'feed') renderFeed();
   }
 
-  // ══════════════════════════════════
-  // WEEK BADGE
-  // ══════════════════════════════════
+  // ── WEEK BADGE ──
   function updateWeekBadge() {
-    const now = new Date();
-    const day = now.getDay();
+    const now = new Date(), day = now.getDay();
     const mon = new Date(now);
     mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
     const thu = new Date(mon);
@@ -956,9 +576,7 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     document.getElementById('weekBadge').textContent = `${f(mon)} – ${f(thu)}`;
   }
 
-  // ══════════════════════════════════
-  // FEED
-  // ══════════════════════════════════
+  // ── FEED ──
   function setFilter(filter, btn) {
     activeFilter = filter;
     document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
@@ -998,7 +616,6 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
           <div class="entry-tags">
             <span class="tag tag-type">${e.type}</span>
             <span class="tag tag-action">${e.action}</span>
-            <span class="tag tag-time">${e.time}</span>
             ${reportTag}
           </div>
           <button class="btn-delete" onclick="deleteEntry(${e.id})">✕</button>
@@ -1010,106 +627,78 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
 
   async function deleteEntry(id) {
     entries = entries.filter(e => e.id !== id);
-    saveLocal();
-    renderFeed();
-    renderStats();
+    saveLocal(); renderFeed(); renderStats();
     await deleteFromCloud(id);
   }
 
   async function clearAll() {
     if (!confirm('Clear all entries this week? This cannot be undone.')) return;
-    if (supabaseUrl && supabaseKey) {
-      for (const e of entries) await deleteFromCloud(e.id);
-    }
+    if (supabaseUrl && supabaseKey) for (const e of entries) await deleteFromCloud(e.id);
     entries = [];
-    saveLocal();
-    renderFeed();
-    renderStats();
+    saveLocal(); renderFeed(); renderStats();
   }
 
-  // ══════════════════════════════════
-  // STATS
-  // ══════════════════════════════════
+  // ── STATS ──
   function renderStats() {
     const strip = document.getElementById('statsStrip');
     if (entries.length === 0) { strip.innerHTML = ''; return; }
     const reportCount = entries.filter(e => e.inReport).length;
     const totalMins   = entries.reduce((s, e) => s + parseInt(e.time), 0);
-    const hrs  = Math.floor(totalMins / 60);
-    const mins = totalMins % 60;
+    const hrs = Math.floor(totalMins / 60), mins = totalMins % 60;
     const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
     strip.innerHTML = `
       <div class="stat-item"><div class="stat-val">${entries.length}</div><div class="stat-lbl">Entries</div></div>
-      <div class="stat-item"><div class="stat-val">${reportCount}</div><div class="stat-lbl">Report</div></div>
-      <div class="stat-item"><div class="stat-val">${timeStr}</div><div class="stat-lbl">Est. Time</div></div>`;
+      <div class="stat-item"><div class="stat-val">${reportCount}</div><div class="stat-lbl">Report</div></div>`;
   }
 
-  // ══════════════════════════════════
-  // SUMMARY
-  // ══════════════════════════════════
+  // ── SUMMARY ──
   function buildSummary() {
     const report = entries.filter(e => e.inReport);
     if (report.length === 0) {
       document.getElementById('summaryText').textContent = 'No entries marked for report yet.';
       return;
     }
+    const weekStr   = document.getElementById('weekBadge').textContent;
+    const name = currentUser ? currentUser.name : 'My';
 
-    const weekStr  = document.getElementById('weekBadge').textContent;
-    const totalMins = report.reduce((s, e) => s + parseInt(e.time), 0);
-    const hrs  = Math.floor(totalMins / 60);
-    const mins = totalMins % 60;
-    const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-
-    let text = `WEEKLY REPORT SECTION\n${weekStr}\n${'─'.repeat(40)}\n\n`;
-
+    let text = `WEEKLY REPORT — ${name.toUpperCase()}\n${weekStr}\n${'─'.repeat(40)}\n\n`;
     const completed = report.filter(e => e.action === 'Completed' && e.notes);
     if (completed.length) {
-      text += `THIS WEEK'S HIGHLIGHTS\n`;
+      text += `HIGHLIGHTS\n`;
       completed.forEach(e => { text += `  • ${e.notes}\n`; });
       text += `\n`;
     }
-
     text += `TASKS / ACTIVITIES\n`;
     ['New','Started','Continued','Completed','Blocked'].forEach(action => {
       const group = report.filter(e => e.action === action);
       if (group.length) {
         text += `  ${action.toUpperCase()}\n`;
-        group.forEach(e => {
-          const note = e.notes || `${e.type} (${e.time})`;
-          text += `    • ${note}  [${e.time}]\n`;
-        });
+        group.forEach(e => { text += `    • ${e.notes || e.type}\n`; });
       }
     });
-
-    text += `\nESTIMATED TIME\n  ${timeStr} across ${report.length} logged entries\n`;
     text += `\n${'─'.repeat(40)}\n`;
     text += `Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
-
     document.getElementById('summaryText').textContent = text;
   }
 
   function copySummary() {
-    const text = document.getElementById('summaryText').textContent;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(document.getElementById('summaryText').textContent).then(() => {
       const btn = document.getElementById('btnCopy');
-      const orig = btn.textContent;
       btn.textContent = '✓ Copied!';
       btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+      setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.classList.remove('copied'); }, 2000);
     });
   }
 
   function exportCSV() {
-    const header = 'Date,Time,Type,Action,TimeEstimate,InReport,Notes';
+    const header = 'Date,Time,User,Type,Action,InReport,Notes';
     const rows = entries.map(e => {
-      const d    = new Date(e.timestamp);
-      const date = d.toLocaleDateString('en-US');
-      const time = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+      const d = new Date(e.timestamp);
       const notes = `"${(e.notes||'').replace(/"/g,'""')}"`;
-      return `${date},${time},${e.type},${e.action},${e.time},${e.inReport?'Yes':'No'},${notes}`;
+      return `${d.toLocaleDateString('en-US')},${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})},${e.user_name||''},${e.type},${e.action},${e.inReport?'Yes':'No'},${notes}`;
     });
-    const csv  = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type:'text/csv' });
+    const csv  = [header,...rows].join('\n');
+    const blob = new Blob([csv],{type:'text/csv'});
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
@@ -1118,28 +707,16 @@ document.write(`<link rel="manifest" href="${manifestURL}">`);
     URL.revokeObjectURL(url);
   }
 
-  // ══════════════════════════════════
-  // SERVICE WORKER (offline support)
-  // ══════════════════════════════════
+  // ── SERVICE WORKER ──
   if ('serviceWorker' in navigator) {
     const swCode = `
-      const CACHE = 'worklogger-v1';
-      const URLS  = [self.location.href];
-      self.addEventListener('install', e => e.waitUntil(
-        caches.open(CACHE).then(c => c.addAll(URLS))
-      ));
-      self.addEventListener('fetch', e => e.respondWith(
-        fetch(e.request).catch(() => caches.match(e.request))
-      ));
+      const CACHE='worklogger-v2';
+      self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll([self.location.href]))));
+      self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));
     `;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swURL  = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swURL).catch(() => {});
+    navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(()=>{});
   }
 
-  // ══════════════════════════════════
-  // AUTO SYNC every 60s when visible
-  // ══════════════════════════════════
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && supabaseUrl && supabaseKey) syncFromCloud();
   });
