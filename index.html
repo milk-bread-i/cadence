@@ -170,7 +170,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   <header>
     <div class="logo">
-      <div class="logo-mark">💫</div>
+      <div class="logo-mark">⁕</div>
       <span class="logo-text">Cadence</span>
     </div>
     <div class="header-right">
@@ -193,14 +193,16 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           <div class="field">
             <label>Type</label>
             <select id="selType">
-              <option>Task</option><option>Meeting</option><option>Discussion</option>
-              <option>Review</option><option>Research</option><option>Admin</option><option>Priority</option>
+              <option>Priority</option><option>Task</option><option>Meeting</option>
+              <option>Event</option><option>Discussion</option>
+              <option>Review</option><option>Research</option><option>Admin</option>
             </select>
           </div>
           <div class="field">
             <label>Action</label>
             <select id="selAction">
-              <option>New</option><option>Started</option><option>Continued</option>
+              <option>Priority</option>
+              <option>Started</option><option>Continued</option>
               <option>Completed</option><option>Blocked</option>
             </select>
           </div>
@@ -274,24 +276,6 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         <span class="user-picker-label">Select your name</span>
         <div class="user-grid" id="userGrid"></div>
         <div id="userSavedMsg"></div>
-      </div>
-
-      <!-- SUPABASE -->
-      <div class="setup-card">
-        <div class="setup-title">Supabase Sync</div>
-        <p class="setup-desc">Connect the shared team database. Get these credentials from your PM or whoever set up the Supabase project.</p>
-        <div class="setup-step">
-          <div class="step-num">1</div>
-          <div class="step-text">Ask your PM for the shared Supabase <strong>Project URL</strong> and <strong>anon public key</strong>.</div>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">2</div>
-          <div class="step-text">Paste them below and tap Save.</div>
-        </div>
-        <input class="cred-input" id="inpUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocorrect="off" autocapitalize="off">
-        <input class="cred-input" id="inpKey" type="text" placeholder="eyJhbGciOi... (anon public key)" autocomplete="off" autocorrect="off" autocapitalize="off">
-        <button class="btn-full btn-primary" onclick="saveCredentials()">Save & Test Connection</button>
-        <div id="setupStatus"></div>
       </div>
 
       <!-- INSTALL -->
