@@ -227,9 +227,8 @@
 const SUPABASE_URL = "https://heuplhwoiuybjqcvpktx.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o";
 
-const TASK_STATUSES = ["New", "Started", "Continued", "Completed", "Blocked"];
+const TASK_STATUSES = ["Started", "Continued", "Completed", "Blocked"];
 const STATUS_COLORS = {
-  New:       { bg: "#dce8f5", text: "#275891", border: "#b8d0e8" },
   Started:   { bg: "#e8f5ee", text: "#2d7a4f", border: "#b8d8c4" },
   Continued: { bg: "#fef9ec", text: "#a06020", border: "#f0d080" },
   Completed: { bg: "#f5e8f0", text: "#9a3070", border: "#e8c8dc" },
@@ -294,21 +293,40 @@ function initials(name) {
 }
 
 function buildSections(member) {
+  // This week's logged entries
   const memberEntries = entries.filter(e => e.user_name === member.name && e.inReport && isInWeek(e.timestamp));
+
   const tasks = {};
   TASK_STATUSES.forEach(s => { tasks[s] = []; });
   memberEntries.filter(e => e.type !== 'Meeting').forEach(e => {
     if (tasks[e.action] !== undefined) tasks[e.action].push(e.notes || e.type);
   });
 
-  // Meetings with date and attendees
-  const meetings = memberEntries
-    .filter(e => e.type === "Meeting")
-    .map(e => {
-      const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
-      const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
-      return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
-    });
+  // Next week date range
+  const thisStart  = new Date(weekOf + "T00:00:00");
+  const nextStart  = new Date(thisStart); nextStart.setDate(thisStart.getDate() + 7);
+  const nextEnd    = new Date(nextStart); nextEnd.setDate(nextStart.getDate() + 3); nextEnd.setHours(23,59,59,999);
+
+  function formatMeeting(e) {
+    const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
+    const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
+    return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
+  }
+
+  // All meeting entries for this member (any logged week) to catch next-week meetings
+  const allMemberMeetings = entries.filter(e => e.user_name === member.name && e.inReport && e.type === 'Meeting');
+
+  const meetingsThisWeek = allMemberMeetings.filter(e => {
+    if (!e.meetingDate) return isInWeek(e.timestamp); // no date = use log date
+    const d = new Date(e.meetingDate + 'T12:00:00');
+    return d >= new Date(weekOf + "T00:00:00") && d <= getWeekEnd(new Date(weekOf + "T00:00:00"));
+  }).map(formatMeeting);
+
+  const meetingsNextWeek = allMemberMeetings.filter(e => {
+    if (!e.meetingDate) return false;
+    const d = new Date(e.meetingDate + 'T12:00:00');
+    return d >= nextStart && d <= nextEnd;
+  }).map(formatMeeting);
 
   // Priority — explicit priority field first, fall back to completed
   const withPriority = memberEntries.filter(e => e.priority);
@@ -321,7 +339,7 @@ function buildSections(member) {
         ? memberEntries.map(e => `${e.action}: ${e.notes || e.type}`).slice(0,3).join("; ")
         : "";
 
-  return { tasks, meetings, priorityText, count: memberEntries.length };
+  return { tasks, meetingsThisWeek, meetingsNextWeek, priorityText, count: memberEntries.length };
 }
 
 // ── SUPABASE ──
@@ -528,7 +546,7 @@ function renderMemberDetail() {
 
     html += `
       <div class="section">
-        <div class="section-label">✅ Tasks / Activities</div>
+        <div class="section-label">✅ Activities</div>
         <div class="task-grid">${taskCols || '<div class="empty-field">No tasks logged</div>'}</div>
       </div>`;
 
@@ -539,11 +557,11 @@ function renderMemberDetail() {
         <div class="meetings-grid">
           <div>
             <div class="sub-label">This Week</div>
-            ${sec.meetings.length ? sec.meetings.map(m => `<div class="task-item">• ${m}</div>`).join('') : '<div class="empty-field">None logged</div>'}
+            ${sec.meetingsThisWeek.length ? sec.meetingsThisWeek.map(m => `<div class="task-item">• ${m}</div>`).join('') : '<div class="empty-field">None logged</div>'}
           </div>
           <div>
             <div class="sub-label">Next Week</div>
-            <div class="empty-field">None logged</div>
+            ${sec.meetingsNextWeek.length ? sec.meetingsNextWeek.map(m => `<div class="task-item">• ${m}</div>`).join('') : '<div class="empty-field">None logged</div>'}
           </div>
         </div>
       </div>`;
@@ -604,17 +622,22 @@ function renderPreview() {
         if (taskCols) {
           html += `
             <div class="doc-section">
-              <div class="doc-sec-title">✅ Tasks / Activities</div>
+              <div class="doc-sec-title">✅ Activities</div>
               <div class="preview-tasks">${taskCols}</div>
             </div>`;
         }
 
-        if (sec.meetings.length) {
-          html += `
-            <div class="doc-section">
-              <div class="doc-sec-title">📅 This Week's Meetings & Events</div>
-              ${sec.meetings.map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}
-            </div>`;
+        if (sec.meetingsThisWeek.length || sec.meetingsNextWeek.length) {
+          html += `<div class="doc-section"><div class="doc-sec-title">📅 Meetings & Events</div>`;
+          if (sec.meetingsThisWeek.length) {
+            html += `<div style="font-size:11px;font-weight:700;color:#9a9288;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;margin-top:8px">This Week</div>
+              ${sec.meetingsThisWeek.map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}`;
+          }
+          if (sec.meetingsNextWeek.length) {
+            html += `<div style="font-size:11px;font-weight:700;color:#9a9288;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;margin-top:10px">Next Week</div>
+              ${sec.meetingsNextWeek.map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}`;
+          }
+          html += `</div>`;
         }
 
 
@@ -643,18 +666,22 @@ function generateReport() {
     const sec = buildSections(m);
     content += `${m.name.toUpperCase()} — ${m.role || ''}\n${'─'.repeat(50)}\n\n`;
     content += `THIS WEEK'S PRIORITIES\n  ${sec.priorityText || '(No entries logged)'}\n\n`;
-    content += `TASKS / ACTIVITIES\n`;
+    content += `ACTIVITIES\n`;
     TASK_STATUSES.forEach(status => {
       if (sec.tasks[status].length) {
         content += `  ${status.toUpperCase()}\n`;
         sec.tasks[status].forEach(t => { content += `    • ${t}\n`; });
       }
     });
-    content += `\nTHIS WEEK'S MEETINGS & EVENTS\n`;
-    if (sec.meetings.length) {
-      sec.meetings.forEach(m => { content += `  • ${m}\n`; });
+    content += `\nTHIS WEEK'S MEETINGS\n`;
+    if (sec.meetingsThisWeek.length) {
+      sec.meetingsThisWeek.forEach(m => { content += `  • ${m}\n`; });
     } else { content += `  (None logged)\n`; }
-    content += `\nNEXT WEEK'S MEETINGS & EVENTS\n  (To be confirmed)\n\n${'═'.repeat(60)}\n\n`;
+    content += `\nNEXT WEEK'S MEETINGS\n`;
+    if (sec.meetingsNextWeek.length) {
+      sec.meetingsNextWeek.forEach(m => { content += `  • ${m}\n`; });
+    } else { content += `  (None logged)\n`; }
+    content += `\n${'═'.repeat(60)}\n\n`;
   });
 
   const blob = new Blob([content], { type: 'text/plain' });
