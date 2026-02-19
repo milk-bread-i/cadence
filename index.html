@@ -565,8 +565,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     const saved = localStorage.getItem(CREDS_KEY);
     if (saved) {
       const c = JSON.parse(saved);
-      supabaseUrl = c.url || 'https://heuplhwoiuybjqcvpktx.supabase.co';
-      supabaseKey = c.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o';
+      supabaseUrl = c.url || '';
+      supabaseKey = c.key || '';
       document.getElementById('inpUrl').value = supabaseUrl;
       document.getElementById('inpKey').value = supabaseKey;
     }
