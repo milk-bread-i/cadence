@@ -856,7 +856,9 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     function meetingLabel(e) {
       const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
       const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
-      return `${e.notes || 'Meeting'}${dateStr}${atStr}`;
+      const dateStr = e.meetingDate ? new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) + ' ' : '';
+      const atStr   = e.attendees ? ` — ${e.attendees}` : '';
+      return `${dateStr}${e.notes || 'Meeting'}${atStr}`;
     }
 
     // Split by meeting date vs next week
