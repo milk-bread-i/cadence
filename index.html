@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Work Logger">
+<meta name="apple-mobile-web-app-title" content="Cadence">
 <meta name="theme-color" content="#0e0f11">
-<title>Work Logger</title>
+<title>Cadence</title>
 
 <script>
 const manifestData = {
-  name: "Work Logger", short_name: "WorkLog",
+  name: "Cadence", short_name: "WorkLog",
   description: "Quick work entry logger with weekly summaries",
   start_url: "./", display: "standalone",
   background_color: "#0e0f11", theme_color: "#0e0f11",
@@ -168,7 +167,6 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}body{background:#08090a}}
 </style>
-
 </head>
 <body>
 <div class="app">
@@ -176,7 +174,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   <header>
     <div class="logo">
       <div class="logo-mark">WL</div>
-      <span class="logo-text">Work Logger</span>
+      <span class="logo-text">Cadence</span>
     </div>
     <div class="header-right">
       <div class="sync-dot" id="syncDot"></div>
@@ -186,56 +184,51 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   </header>
 
   <!-- ══ LOG SCREEN ══ -->
-
   <div class="screen active" id="screen-log">
     <div class="scroll-body">
       <div class="form-card">
 
-```
-    <div id="noUserWarn" class="no-user-warn" onclick="switchScreen('setup')" style="display:none">
-      ⚠️ Set your name in Setup before logging
-    </div>
+        <div id="noUserWarn" class="no-user-warn" onclick="switchScreen('setup')" style="display:none">
+          ⚠️ Set your name in Setup before logging
+        </div>
 
-    <div class="two-col">
-      <div class="field">
-        <label>Type</label>
-        <select id="selType">
-          <option>Task</option><option>Meeting</option><option>Discussion</option>
-          <option>Review</option><option>Research</option><option>Admin</option>
-        </select>
+        <div class="two-col">
+          <div class="field">
+            <label>Type</label>
+            <select id="selType">
+              <option>Task</option><option>Meeting</option><option>Discussion</option>
+              <option>Review</option><option>Research</option><option>Admin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Action</label>
+            <select id="selAction">
+              <option>New</option><option>Started</option><option>Continued</option>
+              <option>Completed</option><option>Blocked</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label-text">Add to report?</span>
+          <label class="toggle">
+            <input type="checkbox" id="chkReport" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="txtNotes" placeholder="What did you do, discuss, or decide?"></textarea>
+        </div>
+
+        <button class="btn-log" id="btnLog" onclick="logEntry()">Log Entry</button>
       </div>
-      <div class="field">
-        <label>Action</label>
-        <select id="selAction">
-          <option>New</option><option>Started</option><option>Continued</option>
-          <option>Completed</option><option>Blocked</option>
-        </select>
-      </div>
     </div>
-
-    <div class="toggle-row">
-      <span class="toggle-label-text">Include in report</span>
-      <label class="toggle">
-        <input type="checkbox" id="chkReport" checked>
-        <div class="toggle-track"></div>
-        <div class="toggle-thumb"></div>
-      </label>
-    </div>
-
-    <div class="field">
-      <label>Notes</label>
-      <textarea id="txtNotes" placeholder="What did you do, discuss, or decide?"></textarea>
-    </div>
-
-    <button class="btn-log" id="btnLog" onclick="logEntry()">Log Entry</button>
-  </div>
-</div>
-```
-
   </div>
 
   <!-- ══ FEED SCREEN ══ -->
-
   <div class="screen" id="screen-feed">
     <div class="feed-filters">
       <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
@@ -247,7 +240,6 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   </div>
 
   <!-- ══ SUMMARY SCREEN ══ -->
-
   <div class="screen" id="screen-summary">
     <div class="scroll-body">
       <div class="summary-card">
@@ -261,52 +253,62 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   </div>
 
   <!-- ══ SETUP SCREEN ══ -->
-
   <div class="screen" id="screen-setup">
     <div class="scroll-body">
 
-```
-  <!-- WHO ARE YOU -->
-  <div class="setup-card">
-    <div class="setup-title">Who Are You?</div>
-    <p class="setup-desc">Pick your name. This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
-    <span class="user-picker-label">Select your name</span>
-    <div class="user-grid" id="userGrid"></div>
-    <div id="userSavedMsg"></div>
-  </div>
+      <!-- TEAM MEMBERS -->
+      <div class="setup-card">
+        <div class="setup-title">Team Members</div>
+        <p class="setup-desc">Add or remove team members. Changes sync to everyone's logger automatically.</p>
+        <div id="teamManagerList" style="margin-bottom:14px"></div>
+        <div id="addMemberForm">
+          <span class="user-picker-label">Add New Member</span>
+          <input class="cred-input" id="newMemberName" type="text" placeholder="Full name" autocorrect="off">
+          <input class="cred-input" id="newMemberRole" type="text" placeholder="Role (e.g. Designer)" autocorrect="off">
+          <button class="btn-full btn-primary" style="margin-bottom:0" onclick="submitAddMember()">+ Add Member</button>
+          <div id="addMemberMsg"></div>
+        </div>
+      </div>
 
-  <!-- SUPABASE -->
-  <div class="setup-card">
-    <div class="setup-title">Supabase Sync</div>
-    <p class="setup-desc">Connect the shared team database. Get these credentials from your PM or whoever set up the Supabase project.</p>
-    <div class="setup-step">
-      <div class="step-num">1</div>
-      <div class="step-text">Ask your PM for the shared Supabase <strong>Project URL</strong> and <strong>anon public key</strong>.</div>
+      <!-- WHO ARE YOU -->
+      <div class="setup-card">
+        <div class="setup-title">Who Are You?</div>
+        <p class="setup-desc">Pick your name. This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
+        <span class="user-picker-label">Select your name</span>
+        <div class="user-grid" id="userGrid"></div>
+        <div id="userSavedMsg"></div>
+      </div>
+
+      <!-- SUPABASE -->
+      <div class="setup-card">
+        <div class="setup-title">Supabase Sync</div>
+        <p class="setup-desc">Connect the shared team database. Get these credentials from your PM or whoever set up the Supabase project.</p>
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Ask your PM for the shared Supabase <strong>Project URL</strong> and <strong>anon public key</strong>.</div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Paste them below and tap Save.</div>
+        </div>
+        <input class="cred-input" id="inpUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <input class="cred-input" id="inpKey" type="text" placeholder="eyJhbGciOi... (anon public key)" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <button class="btn-full btn-primary" onclick="saveCredentials()">Save & Test Connection</button>
+        <div id="setupStatus"></div>
+      </div>
+
+      <!-- INSTALL -->
+      <div class="setup-card">
+        <div class="setup-title">Install as iPhone App</div>
+        <div class="step-text" style="color:var(--text2);line-height:1.7">
+          1. Open this page in <strong>Safari</strong> on your iPhone<br>
+          2. Tap the <strong>Share</strong> button (box with arrow)<br>
+          3. Scroll down → <strong>"Add to Home Screen"</strong><br>
+          4. Tap <strong>Add</strong> — done.
+        </div>
+      </div>
+
     </div>
-    <div class="setup-step">
-      <div class="step-num">2</div>
-      <div class="step-text">Paste them below and tap Save.</div>
-    </div>
-    <input class="cred-input" id="inpUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocorrect="off" autocapitalize="off">
-    <input class="cred-input" id="inpKey" type="text" placeholder="eyJhbGciOi... (anon public key)" autocomplete="off" autocorrect="off" autocapitalize="off">
-    <button class="btn-full btn-primary" onclick="saveCredentials()">Save & Test Connection</button>
-    <div id="setupStatus"></div>
-  </div>
-
-  <!-- INSTALL -->
-  <div class="setup-card">
-    <div class="setup-title">Install as iPhone App</div>
-    <div class="step-text" style="color:var(--text2);line-height:1.7">
-      1. Open this page in <strong>Safari</strong> on your iPhone<br>
-      2. Tap the <strong>Share</strong> button (box with arrow)<br>
-      3. Scroll down → <strong>"Add to Home Screen"</strong><br>
-      4. Tap <strong>Add</strong> — done.
-    </div>
-  </div>
-
-</div>
-```
-
   </div>
 
   <nav class="bottom-nav">
@@ -326,36 +328,103 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 </div>
 
 <script>
-  // ── TEAM MEMBERS — keep in sync with report compiler ──
-  const TEAM_MEMBERS = [
-    { id: "alex",   name: "Alex Rivera",   role: "Project Manager" },
-    { id: "jordan", name: "Jordan Kim",    role: "Lead Developer"  },
-    { id: "morgan", name: "Morgan Taylor", role: "Designer"        },
-    { id: "casey",  name: "Casey Nguyen",  role: "QA Engineer"     },
-  ];
+  const STORAGE_KEY  = 'worklogger_entries';
+  const CREDS_KEY    = 'worklogger_supabase';
+  const USER_KEY     = 'worklogger_user';
+  const MEMBERS_KEY  = 'worklogger_members';
 
-  const STORAGE_KEY = 'worklogger_entries';
-  const CREDS_KEY   = 'worklogger_supabase';
-  const USER_KEY    = 'worklogger_user';
+  // Fallback members if Supabase not yet connected
+  const DEFAULT_MEMBERS = [];
 
   let entries      = [];
+  let teamMembers  = [];
   let activeFilter = 'all';
   let supabaseUrl  = '';
   let supabaseKey  = '';
-  let currentUser  = null; // { id, name, role }
+  let currentUser  = null;
 
   // ── INIT ──
-  function init() {
-    loadUser();
+  async function init() {
     loadCredentials();
     loadLocal();
+    loadCachedMembers();
+    loadUser();
     updateWeekBadge();
     buildUserGrid();
     renderFeed();
     renderStats();
     updateUserBadge();
     updateLogButton();
-    if (supabaseUrl && supabaseKey) syncFromCloud();
+    renderTeamManager();
+    if (supabaseUrl && supabaseKey) {
+      await fetchTeamMembers();
+      syncFromCloud();
+    }
+  }
+
+  // ── TEAM MEMBERS ──
+  function loadCachedMembers() {
+    const saved = localStorage.getItem(MEMBERS_KEY);
+    teamMembers = saved ? JSON.parse(saved) : DEFAULT_MEMBERS;
+  }
+
+  function saveCachedMembers() {
+    localStorage.setItem(MEMBERS_KEY, JSON.stringify(teamMembers));
+  }
+
+  async function fetchTeamMembers() {
+    if (!supabaseUrl || !supabaseKey) return;
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/team_members?select=*&order=name.asc`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+      );
+      if (!res.ok) throw new Error();
+      const rows = await res.json();
+      teamMembers = rows.map(r => ({ id: r.id, name: r.name, role: r.role }));
+      saveCachedMembers();
+      buildUserGrid();
+      renderTeamManager();
+      // Re-validate current user still exists
+      if (currentUser && !teamMembers.find(m => m.id === currentUser.id)) {
+        currentUser = null;
+        localStorage.removeItem(USER_KEY);
+        updateUserBadge();
+        updateLogButton();
+      }
+    } catch(e) {}
+  }
+
+  async function addTeamMember(name, role) {
+    if (!supabaseUrl || !supabaseKey) return false;
+    const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/team_members`, {
+        method: 'POST',
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({ id, name, role })
+      });
+      if (!res.ok) throw new Error();
+      await fetchTeamMembers();
+      return true;
+    } catch(e) { return false; }
+  }
+
+  async function deleteTeamMember(id) {
+    if (!supabaseUrl || !supabaseKey) return;
+    if (!confirm('Remove this team member? Their logged entries will not be deleted.')) return;
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/team_members?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+      });
+      await fetchTeamMembers();
+    } catch(e) {}
   }
 
   // ── USER ──
@@ -365,7 +434,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   }
 
   function selectUser(memberId) {
-    currentUser = TEAM_MEMBERS.find(m => m.id === memberId);
+    currentUser = teamMembers.find(m => m.id === memberId);
+    if (!currentUser) return;
     localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
     buildUserGrid();
     updateUserBadge();
@@ -378,7 +448,11 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   function buildUserGrid() {
     const grid = document.getElementById('userGrid');
-    grid.innerHTML = TEAM_MEMBERS.map(m => {
+    if (!teamMembers.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;font-size:12px;color:var(--text3);text-align:center;padding:12px 0">${supabaseUrl ? 'No team members yet — add one below.' : 'Connect Supabase first, then team members will appear here.'}</div>`;
+      return;
+    }
+    grid.innerHTML = teamMembers.map(m => {
       const initials = m.name.split(' ').map(n => n[0]).join('');
       const sel = currentUser && currentUser.id === m.id ? 'selected' : '';
       return `
@@ -387,6 +461,49 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           ${m.name}
         </button>`;
     }).join('');
+  }
+
+  // ── TEAM MANAGER UI ──
+  function renderTeamManager() {
+    const container = document.getElementById('teamManagerList');
+    if (!container) return;
+    if (!supabaseUrl) {
+      container.innerHTML = `<p class="setup-desc" style="margin:0">Connect Supabase above first.</p>`;
+      return;
+    }
+    if (!teamMembers.length) {
+      container.innerHTML = `<p class="setup-desc" style="margin:0;color:var(--text3)">No team members yet. Add one below.</p>`;
+      return;
+    }
+    container.innerHTML = teamMembers.map(m => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#4f8ef7,#a78bfa);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;flex-shrink:0">
+          ${m.name.split(' ').map(n=>n[0]).join('')}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${m.name}</div>
+          <div style="font-size:11px;color:var(--text3)">${m.role || 'No role'}</div>
+        </div>
+        <button onclick="deleteTeamMember('${m.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:4px 8px;border-radius:4px;transition:color 0.15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button>
+      </div>`).join('');
+  }
+
+  async function submitAddMember() {
+    const nameEl = document.getElementById('newMemberName');
+    const roleEl = document.getElementById('newMemberRole');
+    const msgEl  = document.getElementById('addMemberMsg');
+    const name   = nameEl.value.trim();
+    const role   = roleEl.value.trim();
+    if (!name) { msgEl.className='status-msg err'; msgEl.textContent='Name is required.'; return; }
+    msgEl.className='status-msg'; msgEl.textContent='Adding…';
+    const ok = await addTeamMember(name, role);
+    if (ok) {
+      msgEl.className='status-msg ok'; msgEl.textContent=`✓ ${name} added!`;
+      nameEl.value=''; roleEl.value='';
+      setTimeout(() => { msgEl.textContent=''; msgEl.className=''; }, 2500);
+    } else {
+      msgEl.className='status-msg err'; msgEl.textContent='Failed to add. Check your connection.';
+    }
   }
 
   function updateUserBadge() {
@@ -451,8 +568,9 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       localStorage.setItem(CREDS_KEY, JSON.stringify({ url: supabaseUrl, key: supabaseKey }));
       status.className = 'status-msg ok';
-      status.textContent = '✓ Connected! Syncing entries…';
+      status.textContent = '✓ Connected! Syncing…';
       setSyncStatus('synced');
+      await fetchTeamMembers();
       await syncFromCloud();
     } catch(e) {
       status.className = 'status-msg err';
@@ -723,6 +841,5 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   init();
 </script>
-
 </body>
 </html>
