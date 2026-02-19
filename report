@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadence — Report Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', system-ui, sans-serif; background: #f2efe8; color: #272727; }
+
+  /* ── HEADER ── */
+  .header { background: #275891; color: white; padding: 24px 32px 0; flex-shrink: 0; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 3px; opacity: 0.6; margin-bottom: 4px; text-transform: uppercase; }
+  .title { font-size: 26px; font-weight: 700; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .sync-badge { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 20px; font-size: 11px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.synced  { background: #6ee7a0; }
+  .sync-dot.loading { background: #fcd34d; animation: pulse 1s infinite; }
+  .sync-dot.error   { background: #fca5a5; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .refresh-btn { background: none; border: none; color: white; cursor: pointer; font-size: 16px; opacity: 0.7; padding: 0 2px; }
+  .refresh-btn:hover { opacity: 1; }
+  .week-picker { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .week-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; opacity: 0.6; }
+  .date-input { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 7px 12px; color: white; font-size: 13px; font-family: inherit; cursor: pointer; }
+  .date-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+  .tab-bar { display: flex; gap: 4px; }
+  .tab { background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 500; border-radius: 8px 8px 0 0; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: #f2efe8; color: #275891; }
+
+  /* ── BODY LAYOUT ── */
+  .app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .body { display: grid; grid-template-columns: 260px 1fr; flex: 1; overflow: hidden; }
+  .screen { display: none; flex: 1; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { background: #faf8f4; border-right: 1px solid #ddd8cc; padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .sidebar-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #9a9288; text-transform: uppercase; }
+  .manage-btn { background: none; border: 1px solid #ddd8cc; border-radius: 6px; padding: 3px 8px; font-size: 11px; color: #5a5550; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .manage-btn:hover { border-color: #275891; color: #275891; }
+
+  /* Team manager panel */
+  .team-mgr { background: #f2efe8; border: 1px solid #ddd8cc; border-radius: 10px; padding: 14px; margin-bottom: 4px; }
+  .team-mgr-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #9a9288; margin-bottom: 10px; }
+  .mgr-member { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #ddd8cc; }
+  .mgr-avatar { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#275891,#d38db7); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+  .mgr-name { font-size: 12px; font-weight: 600; color: #272727; }
+  .mgr-role { font-size: 10px; color: #9a9288; }
+  .mgr-delete { background: none; border: none; color: #ccc5b5; cursor: pointer; font-size: 14px; padding: 2px 4px; margin-left: auto; transition: color 0.15s; }
+  .mgr-delete:hover { color: #b03030; }
+  .mgr-add-label { font-size: 11px; font-weight: 600; color: #5a5550; margin-bottom: 6px; margin-top: 4px; }
+  .mgr-input { width: 100%; padding: 7px 10px; border: 1px solid #ddd8cc; border-radius: 7px; font-size: 12px; margin-bottom: 6px; outline: none; background: #faf8f4; color: #272727; font-family: inherit; transition: border-color 0.15s; }
+  .mgr-input:focus { border-color: #275891; }
+  .mgr-add-btn { width: 100%; padding: 8px; background: #275891; color: white; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .mgr-add-btn:hover { background: #1a3f6b; }
+  .mgr-msg { margin-top: 8px; font-size: 11px; padding: 6px 10px; border-radius: 6px; text-align: center; }
+  .mgr-msg.ok  { background: #e8f5ee; color: #2d7a4f; }
+  .mgr-msg.err { background: #fdecea; color: #b03030; }
+  .mgr-msg.pending { background: #fef9ec; color: #a06020; }
+
+  /* Member buttons */
+  .member-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #ddd8cc; border-radius: 10px; background: #faf8f4; cursor: pointer; text-align: left; width: 100%; transition: all 0.15s; }
+  .member-btn:hover { background: #f0ece4; }
+  .member-btn.active { background: #dce8f5; border-color: #275891; }
+  .member-avatar { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg,#275891,#d38db7); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+  .member-avatar.no-data { background: #ccc5b5; }
+  .member-name { font-size: 13px; font-weight: 600; color: #272727; }
+  .member-role { font-size: 11px; color: #9a9288; margin-bottom: 5px; }
+  .progress-bar { height: 3px; background: #ddd8cc; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; background: #275891; }
+  .progress-fill.has-data-active { background: #275891; }
+  .progress-fill.has-data { background: #2d7a4f; }
+  .progress-fill.no-data { background: #ddd8cc; }
+  .progress-label { font-size: 10px; color: #9a9288; margin-top: 3px; }
+  .checkmark { color: #2d7a4f; font-weight: 700; font-size: 14px; margin-left: auto; flex-shrink: 0; }
+
+  .sidebar-divider { height: 1px; background: #ddd8cc; margin: 4px 0; }
+  .total-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .total-stat { background: #f2efe8; border: 1px solid #ddd8cc; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .total-val { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; color: #275891; }
+  .total-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #9a9288; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .generate-btn { padding: 12px; background: #275891; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: inherit; transition: background 0.15s; }
+  .generate-btn:hover { background: #1a3f6b; }
+  .generate-btn:disabled { background: #ccc5b5; cursor: not-allowed; }
+  .config-warn { font-size: 11px; color: #a06020; background: #fef9ec; border: 1px solid #f0d080; border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+  .empty-sidebar { font-size: 12px; color: #9a9288; text-align: center; padding: 20px 0; }
+
+  /* ── MAIN PANEL ── */
+  .main { padding: 28px; overflow-y: auto; background: #f2efe8; flex: 1; }
+  .empty-main { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #9a9288; gap: 12px; }
+  .empty-main-icon { font-size: 32px; opacity: 0.25; }
+
+  .member-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px 20px; background: #faf8f4; border-radius: 14px; border: 1px solid #ddd8cc; }
+  .header-avatar { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg,#275891,#d38db7); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+  .header-avatar.no-data { background: #ccc5b5; }
+  .member-header-name { font-size: 20px; font-weight: 700; color: #272727; margin-bottom: 2px; }
+  .member-header-role { font-size: 13px; color: #5a5550; }
+  .entry-pill { margin-left: auto; font-size: 12px; color: #275891; background: #dce8f5; border: 1px solid #b8d0e8; border-radius: 20px; padding: 5px 12px; font-weight: 600; white-space: nowrap; }
+
+  .empty-member { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px 0; color: #9a9288; text-align: center; }
+
+  .section { background: #faf8f4; border-radius: 14px; border: 1px solid #ddd8cc; padding: 20px; margin-bottom: 16px; }
+  .section-label { font-size: 13px; font-weight: 700; color: #272727; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .readonly-text { font-size: 14px; color: #272727; line-height: 1.6; background: #f2efe8; border-radius: 8px; padding: 12px 14px; }
+
+  .task-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .task-col { border-radius: 10px; padding: 14px; border-top: 3px solid; }
+  .task-status-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid; }
+  .task-item { font-size: 13px; color: #272727; margin-bottom: 4px; line-height: 1.5; }
+
+  .meetings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sub-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; color: #5a5550; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .empty-field { font-size: 13px; color: #9a9288; font-style: italic; }
+
+  /* ── PREVIEW SCREEN ── */
+  .preview-screen { padding: 28px 24px; overflow-y: auto; flex: 1; background: #f2efe8; }
+  .preview-doc { background: #faf8f4; border: 1px solid #ddd8cc; border-radius: 16px; padding: 40px 48px; box-shadow: 0 4px 24px rgba(39,39,39,0.08); max-width: 860px; margin: 0 auto; }
+  .doc-title { font-size: 28px; font-weight: 800; color: #275891; margin-bottom: 6px; }
+  .doc-subtitle { color: #5a5550; font-size: 15px; margin-bottom: 20px; }
+  .doc-divider { height: 3px; background: linear-gradient(90deg,#275891,#d38db7); border-radius: 2px; margin-bottom: 8px; }
+  .preview-member { border-top: 1px solid #ddd8cc; padding-top: 24px; margin-top: 24px; }
+  .preview-member-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .preview-avatar { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg,#275891,#d38db7); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+  .doc-section { margin-bottom: 16px; }
+  .doc-sec-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #275891; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .preview-tasks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .preview-task-col { border-radius: 8px; padding: 12px; }
+  .preview-task-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .preview-task-item { font-size: 13px; color: #272727; margin-bottom: 3px; }
+  .preview-entry-count { font-size: 12px; color: #9a9288; margin-top: 6px; }
+  .no-entries-note { font-size: 13px; color: #9a9288; font-style: italic; padding: 12px 0; }
+  .preview-download { text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="eyebrow">Client Progress Report</div>
+        <h1 class="title">Report Compiler</h1>
+      </div>
+      <div class="header-right">
+        <div class="sync-badge">
+          <div class="sync-dot" id="syncDot"></div>
+          <span id="syncText">Not configured</span>
+          <button class="refresh-btn" onclick="loadAll()" title="Refresh">↺</button>
+        </div>
+        <div class="week-picker">
+          <span class="week-label">Week of</span>
+          <input type="date" class="date-input" id="weekInput" onchange="onWeekChange()">
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" id="tab-report" onclick="switchTab('report')">📊 Team Overview</button>
+      <button class="tab" id="tab-preview" onclick="switchTab('preview')">👁 Preview Report</button>
+    </div>
+  </div>
+
+  <!-- REPORT TAB -->
+  <div class="screen active" id="screen-report">
+    <div class="body" style="flex:1;overflow:hidden">
+
+      <!-- SIDEBAR -->
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Team Members</span>
+          <button class="manage-btn" id="manageBtnTop" onclick="toggleTeamMgr()">Manage</button>
+        </div>
+
+        <div class="team-mgr" id="teamMgr" style="display:none">
+          <div class="team-mgr-title">Manage Team</div>
+          <div id="mgrMemberList"></div>
+          <div class="mgr-add-label">Add Member</div>
+          <input class="mgr-input" id="mgrName" placeholder="Full name" onkeydown="if(event.key==='Enter')submitAddMember()">
+          <input class="mgr-input" id="mgrRole" placeholder="Role (e.g. Designer)" style="margin-bottom:8px" onkeydown="if(event.key==='Enter')submitAddMember()">
+          <button class="mgr-add-btn" onclick="submitAddMember()">+ Add Member</button>
+          <div id="mgrMsg" style="display:none"></div>
+        </div>
+
+        <div id="memberList"></div>
+        <div class="sidebar-divider"></div>
+        <div class="total-stats">
+          <div class="total-stat"><span class="total-val" id="totalEntries">—</span><span class="total-lbl">Total entries</span></div>
+          <div class="total-stat"><span class="total-val" id="totalReady">—</span><span class="total-lbl">Members ready</span></div>
+        </div>
+        <button class="generate-btn" id="generateBtn" onclick="generateReport()">📄 Generate Report</button>
+        <div class="config-warn" id="configWarn" style="display:none">⚠️ Add your Supabase credentials at the top of this file to load live data.</div>
+      </div>
+
+      <!-- MAIN DETAIL -->
+      <div class="main" id="mainPanel">
+        <div class="empty-main" id="emptyMain">
+          <div class="empty-main-icon">◎</div>
+          <div style="font-size:14px" id="emptyMainText">Select a team member.</div>
+        </div>
+        <div id="memberDetail" style="display:none"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PREVIEW TAB -->
+  <div class="screen" id="screen-preview">
+    <div class="preview-screen">
+      <div class="preview-doc" id="previewDoc"></div>
+      <div class="preview-download">
+        <button class="generate-btn" style="display:inline-block;width:auto;padding:12px 28px" onclick="generateReport()">📥 Download Report</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG — paste your Supabase credentials here
+// ─────────────────────────────────────────────
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const TASK_STATUSES = ["New", "Started", "Continued", "Completed", "Blocked"];
+const STATUS_COLORS = {
+  New:       { bg: "#dce8f5", text: "#275891", border: "#b8d0e8" },
+  Started:   { bg: "#e8f5ee", text: "#2d7a4f", border: "#b8d8c4" },
+  Continued: { bg: "#fef9ec", text: "#a06020", border: "#f0d080" },
+  Completed: { bg: "#f5e8f0", text: "#9a3070", border: "#e8c8dc" },
+  Blocked:   { bg: "#fdecea", text: "#b03030", border: "#f0c0c0" },
+};
+
+// ── STATE ──
+let entries      = [];
+let teamMembers  = [];
+let activeMember = null;
+let weekOf       = getMonday(new Date()).toISOString().split("T")[0];
+let generating   = false;
+let teamMgrOpen  = false;
+
+// ── INIT ──
+function init() {
+  document.getElementById('weekInput').value = weekOf;
+  checkConfig();
+  loadAll();
+}
+
+function checkConfig() {
+  const isDefault = SUPABASE_URL === "YOUR_SUPABASE_URL";
+  document.getElementById('configWarn').style.display = isDefault ? 'block' : 'none';
+}
+
+async function loadAll() {
+  await Promise.all([fetchTeamMembers(), fetchEntries()]);
+  render();
+}
+
+// ── HELPERS ──
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function getWeekEnd(start) {
+  const d = new Date(start);
+  d.setDate(d.getDate() + 3);
+  d.setHours(23,59,59,999);
+  return d;
+}
+
+function formatWeek(start, end) {
+  const f = d => d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  return `${f(start)} – ${f(end)}, ${end.getFullYear()}`;
+}
+
+function isInWeek(timestamp) {
+  const start = new Date(weekOf + "T00:00:00");
+  const end   = getWeekEnd(start);
+  const d = new Date(timestamp);
+  return d >= start && d <= end;
+}
+
+function initials(name) {
+  return name.split(" ").map(n => n[0]).join("").toUpperCase();
+}
+
+function buildSections(member) {
+  const memberEntries = entries.filter(e => e.user_name === member.name && e.inReport && isInWeek(e.timestamp));
+  const tasks = {};
+  TASK_STATUSES.forEach(s => { tasks[s] = []; });
+  memberEntries.forEach(e => { if (tasks[e.action] !== undefined) tasks[e.action].push(e.notes || e.type); });
+  const meetings     = memberEntries.filter(e => e.type === "Meeting").map(e => e.notes || "Meeting").filter(Boolean);
+  const completed    = memberEntries.filter(e => e.action === "Completed" && e.notes);
+  const priorityText = completed.length
+    ? completed.map(e => e.notes).join("; ")
+    : memberEntries.length
+      ? memberEntries.map(e => `${e.action}: ${e.notes || e.type}`).slice(0,3).join("; ")
+      : "";
+  return { tasks, meetings, priorityText, count: memberEntries.length };
+}
+
+// ── SUPABASE ──
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot ' + state;
+  document.getElementById('syncText').textContent = text;
+}
+
+async function fetchTeamMembers() {
+  if (SUPABASE_URL === "YOUR_SUPABASE_URL") return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members?select=*&order=name.asc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error();
+    teamMembers = await res.json();
+    if (teamMembers.length && !activeMember) activeMember = teamMembers[0].id;
+  } catch(e) {}
+}
+
+async function fetchEntries() {
+  if (SUPABASE_URL === "YOUR_SUPABASE_URL") return;
+  setSyncStatus('loading', 'Syncing…');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=id,user_name,data&order=id.desc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+    entries = rows.map(r => ({ id: r.id, user_name: r.user_name, ...r.data }));
+    const t = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    setSyncStatus('synced', `Synced ${t}`);
+  } catch(e) {
+    setSyncStatus('error', 'Sync error — check credentials');
+  }
+}
+
+async function addTeamMember(name, role) {
+  const id = name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/team_members`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ id, name, role, custom_sections: [] })
+  });
+  if (!res.ok) throw new Error();
+  await fetchTeamMembers();
+}
+
+async function deleteTeamMember(id, name) {
+  if (!confirm(`Remove ${name}? Their entries won't be deleted.`)) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/team_members?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  });
+  if (activeMember === id) activeMember = null;
+  await fetchTeamMembers();
+  render();
+}
+
+// ── TEAM MANAGER ──
+function toggleTeamMgr() {
+  teamMgrOpen = !teamMgrOpen;
+  document.getElementById('teamMgr').style.display = teamMgrOpen ? 'block' : 'none';
+  document.getElementById('manageBtnTop').textContent = teamMgrOpen ? 'Done' : 'Manage';
+  if (teamMgrOpen) renderMgrList();
+}
+
+function renderMgrList() {
+  const list = document.getElementById('mgrMemberList');
+  if (!teamMembers.length) { list.innerHTML = ''; return; }
+  list.innerHTML = teamMembers.map(m => `
+    <div class="mgr-member">
+      <div class="mgr-avatar">${initials(m.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="mgr-name">${m.name}</div>
+        <div class="mgr-role">${m.role || 'No role'}</div>
+      </div>
+      <button class="mgr-delete" onclick="deleteTeamMember('${m.id}','${m.name.replace(/'/g,"\\'")}')">✕</button>
+    </div>`).join('');
+}
+
+async function submitAddMember() {
+  const name = document.getElementById('mgrName').value.trim();
+  const role = document.getElementById('mgrRole').value.trim();
+  const msg  = document.getElementById('mgrMsg');
+  if (!name) { showMgrMsg('Name is required.', 'err'); return; }
+  showMgrMsg('Adding…', 'pending');
+  try {
+    await addTeamMember(name, role);
+    showMgrMsg(`✓ ${name} added!`, 'ok');
+    document.getElementById('mgrName').value = '';
+    document.getElementById('mgrRole').value = '';
+    renderMgrList();
+    render();
+    setTimeout(() => { msg.style.display='none'; }, 2500);
+  } catch(e) {
+    showMgrMsg('Failed to add. Check your connection.', 'err');
+  }
+}
+
+function showMgrMsg(text, type) {
+  const msg = document.getElementById('mgrMsg');
+  msg.style.display = 'block';
+  msg.className = 'mgr-msg ' + type;
+  msg.textContent = text;
+}
+
+// ── RENDER ──
+function render() {
+  renderSidebar();
+  renderMemberDetail();
+  renderPreview();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('memberList');
+  if (!teamMembers.length) {
+    list.innerHTML = `<div class="empty-sidebar">${SUPABASE_URL === "YOUR_SUPABASE_URL" ? "Add Supabase credentials to load team." : "No team members yet — click Manage to add."}</div>`;
+    document.getElementById('totalEntries').textContent = '—';
+    document.getElementById('totalReady').textContent = '—';
+    return;
+  }
+
+  const weekEntries = entries.filter(e => isInWeek(e.timestamp) && e.inReport);
+  let readyCount = 0;
+
+  list.innerHTML = teamMembers.map(m => {
+    const sec     = buildSections(m);
+    const hasData = sec.count > 0;
+    const isAct   = m.id === activeMember;
+    if (hasData) readyCount++;
+    const fillClass = !hasData ? 'no-data' : isAct ? 'has-data-active' : 'has-data';
+    return `
+      <button class="member-btn ${isAct ? 'active' : ''}" onclick="selectMember('${m.id}')">
+        <div class="member-avatar ${hasData ? '' : 'no-data'}">${initials(m.name)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="member-name">${m.name}</div>
+          <div class="member-role">${m.role || ''}</div>
+          <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${hasData?100:0}%"></div></div>
+          <div class="progress-label">${hasData ? `${sec.count} entr${sec.count===1?'y':'ies'} logged` : 'No entries yet'}</div>
+        </div>
+        ${hasData ? '<div class="checkmark">✓</div>' : ''}
+      </button>`;
+  }).join('');
+
+  document.getElementById('totalEntries').textContent = weekEntries.length;
+  document.getElementById('totalReady').textContent   = `${readyCount}/${teamMembers.length}`;
+}
+
+function selectMember(id) {
+  activeMember = id;
+  render();
+}
+
+function renderMemberDetail() {
+  const detail  = document.getElementById('memberDetail');
+  const empty   = document.getElementById('emptyMain');
+  const member  = teamMembers.find(m => m.id === activeMember);
+
+  if (!member) {
+    detail.style.display = 'none';
+    empty.style.display  = 'flex';
+    document.getElementById('emptyMainText').textContent = teamMembers.length === 0 ? 'Add team members to get started.' : 'Select a team member.';
+    return;
+  }
+
+  empty.style.display  = 'none';
+  detail.style.display = 'block';
+
+  const sec     = buildSections(member);
+  const hasData = sec.count > 0;
+
+  let html = `
+    <div class="member-header">
+      <div class="header-avatar ${hasData?'':'no-data'}">${initials(member.name)}</div>
+      <div style="flex:1">
+        <div class="member-header-name">${member.name}</div>
+        <div class="member-header-role">${member.role || ''}</div>
+      </div>
+      <div class="entry-pill">${hasData ? `${sec.count} entr${sec.count===1?'y':'ies'}` : 'No entries this week'}</div>
+    </div>`;
+
+  if (!hasData) {
+    html += `<div class="empty-member"><div style="font-size:32px;opacity:0.25">◎</div><div style="font-size:14px">${member.name.split(' ')[0]} hasn't logged any report entries this week yet.</div></div>`;
+  } else {
+    // Priorities
+    html += `
+      <div class="section">
+        <div class="section-label">🎯 This Week's Priorities</div>
+        <div class="readonly-text">${sec.priorityText || '—'}</div>
+      </div>`;
+
+    // Tasks
+    const taskCols = TASK_STATUSES
+      .filter(s => sec.tasks[s].length)
+      .map(s => {
+        const sc = STATUS_COLORS[s];
+        return `<div class="task-col" style="background:${sc.bg};border-top-color:${sc.border}">
+          <div class="task-status-label" style="color:${sc.text};border-bottom-color:${sc.border}">${s}</div>
+          ${sec.tasks[s].map(item => `<div class="task-item">• ${item}</div>`).join('')}
+        </div>`;
+      }).join('');
+
+    html += `
+      <div class="section">
+        <div class="section-label">✅ Tasks / Activities</div>
+        <div class="task-grid">${taskCols || '<div class="empty-field">No tasks logged</div>'}</div>
+      </div>`;
+
+    // Meetings
+    html += `
+      <div class="section">
+        <div class="section-label">📅 Meetings & Events</div>
+        <div class="meetings-grid">
+          <div>
+            <div class="sub-label">This Week</div>
+            ${sec.meetings.length ? sec.meetings.map(m => `<div class="task-item">• ${m}</div>`).join('') : '<div class="empty-field">None logged</div>'}
+          </div>
+          <div>
+            <div class="sub-label">Next Week</div>
+            <div class="empty-field">None logged</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  detail.innerHTML = html;
+}
+
+function renderPreview() {
+  const doc = document.getElementById('previewDoc');
+  const start = new Date(weekOf + "T00:00:00");
+  const end   = getWeekEnd(start);
+  const weekLabel = formatWeek(start, end);
+
+  let html = `
+    <div style="text-align:center;margin-bottom:32px">
+      <h1 class="doc-title">Weekly Progress Report</h1>
+      <div class="doc-subtitle">Week of ${weekLabel}</div>
+      <div class="doc-divider"></div>
+    </div>`;
+
+  if (!teamMembers.length) {
+    html += `<div class="empty-field" style="text-align:center;padding:40px 0">No team members loaded yet.</div>`;
+  } else {
+    teamMembers.forEach(m => {
+      const sec = buildSections(m);
+      html += `
+        <div class="preview-member">
+          <div class="preview-member-header">
+            <div class="preview-avatar">${initials(m.name)}</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:#272727">${m.name}</div>
+              <div style="font-size:13px;color:#5a5550">${m.role || ''}</div>
+            </div>
+          </div>`;
+
+      if (sec.count === 0) {
+        html += `<div class="no-entries-note">No entries submitted yet.</div>`;
+      } else {
+        if (sec.priorityText) {
+          html += `
+            <div class="doc-section">
+              <div class="doc-sec-title">🎯 This Week's Priorities</div>
+              <p style="font-size:14px;color:#272727;line-height:1.6">${sec.priorityText}</p>
+            </div>`;
+        }
+
+        const taskCols = TASK_STATUSES
+          .filter(s => sec.tasks[s].length)
+          .map(s => {
+            const sc = STATUS_COLORS[s];
+            return `<div class="preview-task-col" style="background:${sc.bg}">
+              <div class="preview-task-label" style="color:${sc.text}">${s}</div>
+              ${sec.tasks[s].map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}
+            </div>`;
+          }).join('');
+
+        if (taskCols) {
+          html += `
+            <div class="doc-section">
+              <div class="doc-sec-title">✅ Tasks / Activities</div>
+              <div class="preview-tasks">${taskCols}</div>
+            </div>`;
+        }
+
+        if (sec.meetings.length) {
+          html += `
+            <div class="doc-section">
+              <div class="doc-sec-title">📅 This Week's Meetings</div>
+              ${sec.meetings.map(item => `<div class="preview-task-item">• ${item}</div>`).join('')}
+            </div>`;
+        }
+
+        html += `<div class="preview-entry-count">${sec.count} entr${sec.count===1?'y':'ies'} this week</div>`;
+      }
+      html += `</div>`;
+    });
+  }
+
+  doc.innerHTML = html;
+}
+
+// ── GENERATE REPORT ──
+function generateReport() {
+  if (generating) return;
+  generating = true;
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+
+  const start = new Date(weekOf + "T00:00:00");
+  const end   = getWeekEnd(start);
+  const weekLabel = formatWeek(start, end);
+  let content = `WEEKLY PROGRESS REPORT\nWeek of ${weekLabel}\n${'═'.repeat(60)}\n\n`;
+
+  teamMembers.forEach(m => {
+    const sec = buildSections(m);
+    content += `${m.name.toUpperCase()} — ${m.role || ''}\n${'─'.repeat(50)}\n\n`;
+    content += `THIS WEEK'S PRIORITIES\n  ${sec.priorityText || '(No entries logged)'}\n\n`;
+    content += `TASKS / ACTIVITIES\n`;
+    TASK_STATUSES.forEach(status => {
+      if (sec.tasks[status].length) {
+        content += `  ${status.toUpperCase()}\n`;
+        sec.tasks[status].forEach(t => { content += `    • ${t}\n`; });
+      }
+    });
+    content += `\nTHIS WEEK'S MEETINGS\n`;
+    if (sec.meetings.length) {
+      sec.meetings.forEach(m => { content += `  • ${m}\n`; });
+    } else { content += `  (None logged)\n`; }
+    content += `\nNEXT WEEK'S MEETINGS\n  (To be confirmed)\n\n${'═'.repeat(60)}\n\n`;
+  });
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `cadence-report-${weekOf}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  setTimeout(() => {
+    generating = false;
+    btn.disabled = false;
+    btn.textContent = '📄 Generate Report';
+  }, 1000);
+}
+
+// ── NAVIGATION ──
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'preview') renderPreview();
+}
+
+function onWeekChange() {
+  weekOf = document.getElementById('weekInput').value;
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
