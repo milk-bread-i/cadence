@@ -178,7 +178,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
   <header>
     <div class="logo">
-      <div class="logo-mark">⁕</div>
+      <div class="logo-mark">✓</div>
       <span class="logo-text">CADENCE</span>
     </div>
     <div class="header-right">
@@ -201,7 +201,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           <div class="field">
             <label>Type</label>
             <select id="selType" onchange="onTypeChange()">
-              <option>Task</option><option>Meeting or Event</option><option>Discussion</option>
+              <option>Task</option><option>Meeting/Event</option><option>Discussion</option>
               <option>Review</option><option>Research</option><option>Admin</option>
             </select>
           </div>
@@ -217,7 +217,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         <!-- Meeting-only fields -->
         <div class="meeting-fields" id="meetingFields" style="display:none">
           <div class="field">
-            <label>Meeting Date</label>
+            <label>Meeting/Event Date</label>
             <input type="date" class="date-input-field" id="meetingDate">
           </div>
           <div class="field">
@@ -237,8 +237,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
 
         <!-- Priority field (report entries only) -->
         <div class="field" id="priorityField">
-          <label>Priority / Highlight <span style="font-size:9px;opacity:0.6;letter-spacing:0">(optional — appears at top of your section)</span></label>
-          <textarea id="txtPriority" placeholder="Key outcome or focus area for your section…" style="height:60px"></textarea>
+          <label>Priority / Highlight <span style="font-size:9px;opacity:0.6;letter-spacing:0">(optional — appears at top of report)</span></label>
+          <textarea id="txtPriority" placeholder="Key outcome or focus area for the report…" style="height:60px"></textarea>
         </div>
 
         <div class="field">
@@ -302,6 +302,23 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         <div id="userSavedMsg"></div>
       </div>
 
+      <!-- SUPABASE -->
+      <div class="setup-card">
+        <div class="setup-title">Supabase Sync</div>
+        <p class="setup-desc">Connect the shared team database. Get these credentials from your PM or whoever set up the Supabase project.</p>
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-text">Ask your PM for the shared Supabase <strong>Project URL</strong> and <strong>anon public key</strong>.</div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-text">Paste them below and tap Save.</div>
+        </div>
+        <input class="cred-input" id="inpUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <input class="cred-input" id="inpKey" type="text" placeholder="eyJhbGciOi... (anon public key)" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <button class="btn-full btn-primary" onclick="saveCredentials()">Save & Test Connection</button>
+        <div id="setupStatus"></div>
+      </div>
 
       <!-- INSTALL -->
       <div class="setup-card">
@@ -548,8 +565,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     const saved = localStorage.getItem(CREDS_KEY);
     if (saved) {
       const c = JSON.parse(saved);
-      supabaseUrl = c.url || '';
-      supabaseKey = c.key || '';
+      supabaseUrl = c.url || 'https://heuplhwoiuybjqcvpktx.supabase.co';
+      supabaseKey = c.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o';
       document.getElementById('inpUrl').value = supabaseUrl;
       document.getElementById('inpKey').value = supabaseKey;
     }
