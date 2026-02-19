@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Cadence">
+<meta name="apple-mobile-web-app-title" content="Work Logger">
 <meta name="theme-color" content="#0e0f11">
-<title>Cadence</title>
+<title>CADENCE</title>
 
 <script>
 const manifestData = {
-  name: "Cadence", short_name: "WorkLog",
+  name: "CADENCE", short_name: "WorkLog",
   description: "Quick work entry logger with weekly summaries",
   start_url: "./", display: "standalone",
   background_color: "#0e0f11", theme_color: "#0e0f11",
@@ -162,6 +162,14 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   .user-btn.selected{background:#dce8f5;border-color:var(--accent);color:var(--accent)}
   .user-btn .user-initials{font-family:var(--mono);font-size:18px;font-weight:700;display:block;margin-bottom:4px;color:var(--accent)}
 
+  /* Meeting extra fields */
+  .meeting-fields{display:flex;flex-direction:column;gap:12px;animation:slideIn 0.15s ease}
+  .date-input-field{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:16px;padding:13px 16px;outline:none;width:100%;transition:border-color 0.15s}
+  .date-input-field:focus{border-color:var(--accent)}
+
+  /* Priority field */
+  .priority-field textarea{height:60px}
+
   @media(min-width:768px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}body{background:#e8e4dc}}
 </style>
 </head>
@@ -171,7 +179,7 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   <header>
     <div class="logo">
       <div class="logo-mark">⁕</div>
-      <span class="logo-text">Cadence</span>
+      <span class="logo-text">CADENCE</span>
     </div>
     <div class="header-right">
       <div class="sync-dot" id="syncDot"></div>
@@ -192,29 +200,45 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
         <div class="two-col">
           <div class="field">
             <label>Type</label>
-            <select id="selType">
-              <option>Priority</option><option>Task</option><option>Meeting</option>
-              <option>Event</option><option>Discussion</option>
+            <select id="selType" onchange="onTypeChange()">
+              <option>Task</option><option>Meeting or Event</option><option>Discussion</option>
               <option>Review</option><option>Research</option><option>Admin</option>
             </select>
           </div>
           <div class="field">
             <label>Action</label>
             <select id="selAction">
-              <option>Priority</option>
               <option>Started</option><option>Continued</option>
               <option>Completed</option><option>Blocked</option>
             </select>
           </div>
         </div>
 
+        <!-- Meeting-only fields -->
+        <div class="meeting-fields" id="meetingFields" style="display:none">
+          <div class="field">
+            <label>Meeting Date</label>
+            <input type="date" class="date-input-field" id="meetingDate">
+          </div>
+          <div class="field">
+            <label>Attendees</label>
+            <input type="text" class="date-input-field" id="meetingAttendees" placeholder="Who was there?" style="font-size:16px">
+          </div>
+        </div>
+
         <div class="toggle-row">
-          <span class="toggle-label-text">Include in report</span>
+          <span class="toggle-label-text">Include in report?</span>
           <label class="toggle">
             <input type="checkbox" id="chkReport" checked>
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
+        </div>
+
+        <!-- Priority field (report entries only) -->
+        <div class="field" id="priorityField">
+          <label>Priority / Highlight <span style="font-size:9px;opacity:0.6;letter-spacing:0">(optional — appears at top of your section)</span></label>
+          <textarea id="txtPriority" placeholder="Key outcome or focus area for your section…" style="height:60px"></textarea>
         </div>
 
         <div class="field">
@@ -272,11 +296,12 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       <!-- WHO ARE YOU -->
       <div class="setup-card">
         <div class="setup-title">Who Are You?</div>
-        <p class="setup-desc">This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
+        <p class="setup-desc">Pick your name. This is saved on this device and tags every entry you log so the report compiler knows who submitted it.</p>
         <span class="user-picker-label">Select your name</span>
         <div class="user-grid" id="userGrid"></div>
         <div id="userSavedMsg"></div>
       </div>
+
 
       <!-- INSTALL -->
       <div class="setup-card">
@@ -320,8 +345,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
   let entries      = [];
   let teamMembers  = [];
   let activeFilter = 'all';
-  let supabaseUrl  = 'https://heuplhwoiuybjqcvpktx.supabase.co';
-  let supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhldXBsaHdvaXV5YmpxY3Zwa3R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODMzMTYsImV4cCI6MjA4NzA1OTMxNn0.RKrpUHkKvOcHFeKdcQX6wiOTGs8ybyhQpT_pHpzs53o';
+  let supabaseUrl  = '';
+  let supabaseKey  = '';
   let currentUser  = null;
 
   // ── INIT ──
@@ -620,18 +645,33 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     } catch(e) {}
   }
 
+  // ── TYPE CHANGE ──
+  function onTypeChange() {
+    const isMeeting = document.getElementById('selType').value === 'Meeting';
+    document.getElementById('meetingFields').style.display = isMeeting ? 'flex' : 'none';
+    // Default meeting date to today
+    if (isMeeting && !document.getElementById('meetingDate').value) {
+      document.getElementById('meetingDate').value = new Date().toISOString().split('T')[0];
+    }
+  }
+
   // ── LOG ENTRY ──
   async function logEntry() {
     if (!currentUser) return;
+    const type = document.getElementById('selType').value;
+    const isMeeting = type === 'Meeting';
     const entry = {
-      id:        Date.now(),
-      timestamp: new Date().toISOString(),
-      user_name: currentUser.name,
-      user_id:   currentUser.id,
-      type:      document.getElementById('selType').value,
-      action:    document.getElementById('selAction').value,
-      inReport:  document.getElementById('chkReport').checked,
-      notes:     document.getElementById('txtNotes').value.trim(),
+      id:          Date.now(),
+      timestamp:   new Date().toISOString(),
+      user_name:   currentUser.name,
+      user_id:     currentUser.id,
+      type,
+      action:      document.getElementById('selAction').value,
+      inReport:    document.getElementById('chkReport').checked,
+      priority:    document.getElementById('txtPriority').value.trim(),
+      notes:       document.getElementById('txtNotes').value.trim(),
+      meetingDate: isMeeting ? document.getElementById('meetingDate').value : '',
+      attendees:   isMeeting ? document.getElementById('meetingAttendees').value.trim() : '',
     };
 
     entries.unshift(entry);
@@ -640,6 +680,9 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     renderStats();
 
     document.getElementById('txtNotes').value = '';
+    document.getElementById('txtPriority').value = '';
+    document.getElementById('meetingDate').value = '';
+    document.getElementById('meetingAttendees').value = '';
     document.getElementById('chkReport').checked = true;
 
     const btn = document.getElementById('btnLog');
@@ -709,6 +752,13 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
     const reportTag = e.inReport
       ? `<span class="tag tag-report">Report</span>`
       : `<span class="tag tag-noreport">Skip</span>`;
+    const meetingInfo = e.type === 'Meeting' && (e.meetingDate || e.attendees) ? `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;gap:12px;flex-wrap:wrap">
+        ${e.meetingDate ? `<span>📅 ${new Date(e.meetingDate + 'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>` : ''}
+        ${e.attendees   ? `<span>👥 ${e.attendees}</span>` : ''}
+      </div>` : '';
+    const priorityInfo = e.priority ? `
+      <div style="font-size:12px;color:var(--accent);font-weight:500;margin-bottom:6px">⭐ ${e.priority}</div>` : '';
     return `
       <div class="entry-card">
         <div class="entry-top">
@@ -719,6 +769,8 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
           </div>
           <button class="btn-delete" onclick="deleteEntry(${e.id})">✕</button>
         </div>
+        ${priorityInfo}
+        ${meetingInfo}
         <div class="entry-notes${e.notes ? '' : ' empty'}">${e.notes || 'No notes'}</div>
         <div class="entry-time">${day} · ${t}</div>
       </div>`;
@@ -757,24 +809,40 @@ document.write(`<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
       document.getElementById('summaryText').textContent = 'No entries marked for report yet.';
       return;
     }
-    const weekStr   = document.getElementById('weekBadge').textContent;
-    const name = currentUser ? currentUser.name : 'My';
+    const weekStr = document.getElementById('weekBadge').textContent;
+    const name    = currentUser ? currentUser.name : 'My';
 
     let text = `WEEKLY REPORT — ${name.toUpperCase()}\n${weekStr}\n${'─'.repeat(40)}\n\n`;
-    const completed = report.filter(e => e.action === 'Completed' && e.notes);
-    if (completed.length) {
-      text += `HIGHLIGHTS\n`;
+
+    // Priorities — explicit priority field first, then completed entries
+    const priorities = report.filter(e => e.priority);
+    const completed  = report.filter(e => e.action === 'Completed' && e.notes && !e.priority);
+    if (priorities.length || completed.length) {
+      text += `PRIORITIES / HIGHLIGHTS\n`;
+      priorities.forEach(e => { text += `  • ${e.priority}\n`; });
       completed.forEach(e => { text += `  • ${e.notes}\n`; });
       text += `\n`;
     }
+
     text += `TASKS / ACTIVITIES\n`;
     ['New','Started','Continued','Completed','Blocked'].forEach(action => {
-      const group = report.filter(e => e.action === action);
+      const group = report.filter(e => e.action === action && e.type !== 'Meeting');
       if (group.length) {
         text += `  ${action.toUpperCase()}\n`;
         group.forEach(e => { text += `    • ${e.notes || e.type}\n`; });
       }
     });
+
+    const meetings = report.filter(e => e.type === 'Meeting');
+    if (meetings.length) {
+      text += `\nMEETINGS\n`;
+      meetings.forEach(e => {
+        const dateStr = e.meetingDate ? ` (${new Date(e.meetingDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})})` : '';
+        const atStr   = e.attendees   ? ` — ${e.attendees}` : '';
+        text += `  • ${e.notes || 'Meeting'}${dateStr}${atStr}\n`;
+      });
+    }
+
     text += `\n${'─'.repeat(40)}\n`;
     text += `Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
     document.getElementById('summaryText').textContent = text;
